@@ -2,39 +2,58 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Bread Delivery Design System - Warm bakery-inspired colors */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 45 100% 98%;
+    --foreground: 25 35% 15%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 42 100% 99%;
+    --card-foreground: 25 35% 15%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 42 100% 99%;
+    --popover-foreground: 25 35% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 32 85% 55%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 35 90% 65%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 25 20% 88%;
+    --secondary-foreground: 25 35% 25%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 35 25% 92%;
+    --muted-foreground: 25 15% 55%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 35 80% 75%;
+    --accent-foreground: 25 35% 15%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 35 20% 88%;
+    --input: 35 20% 88%;
+    --ring: 32 85% 55%;
+
+    /* Bread Delivery specific colors */
+    --bread-golden: 32 85% 55%;
+    --bread-crust: 25 60% 35%;
+    --bread-cream: 42 60% 95%;
+    --delivery-green: 120 45% 55%;
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+    --gradient-warm: linear-gradient(180deg, hsl(var(--bread-cream)), hsl(var(--secondary)));
+    --gradient-hero: linear-gradient(135deg, hsl(var(--bread-golden) / 0.9), hsl(var(--bread-crust) / 0.8));
+    
+    /* Shadows */
+    --shadow-warm: 0 10px 30px -10px hsl(var(--bread-golden) / 0.2);
+    --shadow-card: 0 4px 20px -4px hsl(var(--bread-crust) / 0.1);
+    --shadow-button: 0 4px 15px -3px hsl(var(--primary) / 0.3);
+    
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --bounce-gentle: cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
     --radius: 0.5rem;
 
