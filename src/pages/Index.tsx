@@ -1,7 +1,8 @@
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
-import Features from "@/components/Features";
-import ProductGrid from "@/components/ProductGrid";
+import HowItWorks from "@/components/HowItWorks";
+import JoinUs from "@/components/JoinUs";
+import DownloadApp from "@/components/DownloadApp";
 import Footer from "@/components/Footer";
 
 const Index = () => {
@@ -10,8 +11,9 @@ const Index = () => {
       <Header />
       <main>
         <Hero />
-        <Features />
-        <ProductGrid />
+        <HowItWorks />
+        <JoinUs />
+        <DownloadApp />
       </main>
       <Footer />
     </div>
