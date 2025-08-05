@@ -14,7 +14,344 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      entregas: {
+        Row: {
+          comissao_percentual: number
+          created_at: string
+          data_coleta: string | null
+          data_entrega: string | null
+          entregador_id: string
+          id: string
+          local_entrega: string
+          local_retirada: string
+          pedido_id: string
+          status_entrega: Database["public"]["Enums"]["status_entrega"]
+          updated_at: string
+          valor_comissao: number | null
+        }
+        Insert: {
+          comissao_percentual?: number
+          created_at?: string
+          data_coleta?: string | null
+          data_entrega?: string | null
+          entregador_id: string
+          id?: string
+          local_entrega: string
+          local_retirada: string
+          pedido_id: string
+          status_entrega?: Database["public"]["Enums"]["status_entrega"]
+          updated_at?: string
+          valor_comissao?: number | null
+        }
+        Update: {
+          comissao_percentual?: number
+          created_at?: string
+          data_coleta?: string | null
+          data_entrega?: string | null
+          entregador_id?: string
+          id?: string
+          local_entrega?: string
+          local_retirada?: string
+          pedido_id?: string
+          status_entrega?: Database["public"]["Enums"]["status_entrega"]
+          updated_at?: string
+          valor_comissao?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entregas_entregador_id_fkey"
+            columns: ["entregador_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entregas_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      itens_pedido: {
+        Row: {
+          created_at: string
+          id: string
+          pedido_id: string
+          preco_unitario: number
+          produto_id: string
+          quantidade: number
+          subtotal: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pedido_id: string
+          preco_unitario: number
+          produto_id: string
+          quantidade: number
+          subtotal: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pedido_id?: string
+          preco_unitario?: number
+          produto_id?: string
+          quantidade?: number
+          subtotal?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "itens_pedido_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "itens_pedido_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      padarias: {
+        Row: {
+          coordenadas_lat: number | null
+          coordenadas_lng: number | null
+          created_at: string
+          endereco: string
+          horario_funcionamento: Json | null
+          id: string
+          localizacao: string | null
+          nome_padaria: string
+          status_ativa: boolean
+          updated_at: string
+        }
+        Insert: {
+          coordenadas_lat?: number | null
+          coordenadas_lng?: number | null
+          created_at?: string
+          endereco: string
+          horario_funcionamento?: Json | null
+          id?: string
+          localizacao?: string | null
+          nome_padaria: string
+          status_ativa?: boolean
+          updated_at?: string
+        }
+        Update: {
+          coordenadas_lat?: number | null
+          coordenadas_lng?: number | null
+          created_at?: string
+          endereco?: string
+          horario_funcionamento?: Json | null
+          id?: string
+          localizacao?: string | null
+          nome_padaria?: string
+          status_ativa?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pagamentos_comissoes: {
+        Row: {
+          created_at: string
+          data_pagamento: string | null
+          entregador_id: string
+          id: string
+          pago: boolean
+          pedido_id: string
+          percentual_comissao: number
+          valor_recebido: number
+          valor_total_entrega: number
+        }
+        Insert: {
+          created_at?: string
+          data_pagamento?: string | null
+          entregador_id: string
+          id?: string
+          pago?: boolean
+          pedido_id: string
+          percentual_comissao: number
+          valor_recebido: number
+          valor_total_entrega: number
+        }
+        Update: {
+          created_at?: string
+          data_pagamento?: string | null
+          entregador_id?: string
+          id?: string
+          pago?: boolean
+          pedido_id?: string
+          percentual_comissao?: number
+          valor_recebido?: number
+          valor_total_entrega?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pagamentos_comissoes_entregador_id_fkey"
+            columns: ["entregador_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagamentos_comissoes_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pedidos: {
+        Row: {
+          cliente_id: string
+          created_at: string
+          endereco_entrega: string
+          forma_pagamento: Database["public"]["Enums"]["forma_pagamento"]
+          id: string
+          observacoes: string | null
+          padaria_id: string
+          status_pedido: Database["public"]["Enums"]["status_pedido"]
+          updated_at: string
+          valor_total: number
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string
+          endereco_entrega: string
+          forma_pagamento: Database["public"]["Enums"]["forma_pagamento"]
+          id?: string
+          observacoes?: string | null
+          padaria_id: string
+          status_pedido?: Database["public"]["Enums"]["status_pedido"]
+          updated_at?: string
+          valor_total: number
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string
+          endereco_entrega?: string
+          forma_pagamento?: Database["public"]["Enums"]["forma_pagamento"]
+          id?: string
+          observacoes?: string | null
+          padaria_id?: string
+          status_pedido?: Database["public"]["Enums"]["status_pedido"]
+          updated_at?: string
+          valor_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedidos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedidos_padaria_id_fkey"
+            columns: ["padaria_id"]
+            isOneToOne: false
+            referencedRelation: "padarias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      produtos: {
+        Row: {
+          created_at: string
+          disponivel: boolean
+          estoque_atual: number
+          id: string
+          imagem_url: string | null
+          nome_produto: string
+          padaria_id: string
+          preco: number
+          tipo_pao: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          disponivel?: boolean
+          estoque_atual?: number
+          id?: string
+          imagem_url?: string | null
+          nome_produto: string
+          padaria_id: string
+          preco: number
+          tipo_pao?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          disponivel?: boolean
+          estoque_atual?: number
+          id?: string
+          imagem_url?: string | null
+          nome_produto?: string
+          padaria_id?: string
+          preco?: number
+          tipo_pao?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produtos_padaria_id_fkey"
+            columns: ["padaria_id"]
+            isOneToOne: false
+            referencedRelation: "padarias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      usuarios: {
+        Row: {
+          created_at: string
+          email: string
+          foto_passaporte: string | null
+          id: string
+          localizacao_atual: string | null
+          nome_completo: string
+          status_cadastro: Database["public"]["Enums"]["status_cadastro"]
+          telefone: string
+          tipo_usuario: Database["public"]["Enums"]["tipo_usuario"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          foto_passaporte?: string | null
+          id?: string
+          localizacao_atual?: string | null
+          nome_completo: string
+          status_cadastro?: Database["public"]["Enums"]["status_cadastro"]
+          telefone: string
+          tipo_usuario: Database["public"]["Enums"]["tipo_usuario"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          foto_passaporte?: string | null
+          id?: string
+          localizacao_atual?: string | null
+          nome_completo?: string
+          status_cadastro?: Database["public"]["Enums"]["status_cadastro"]
+          telefone?: string
+          tipo_usuario?: Database["public"]["Enums"]["tipo_usuario"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +360,16 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      forma_pagamento: "mpesa" | "emola" | "paypal" | "dinheiro"
+      status_cadastro: "pendente" | "aprovado" | "rejeitado"
+      status_entrega: "aceita" | "em_transito" | "entregue" | "cancelada"
+      status_pedido:
+        | "pendente"
+        | "em_preparacao"
+        | "a_caminho"
+        | "entregue"
+        | "cancelado"
+      tipo_usuario: "cliente" | "entregador"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +496,18 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      forma_pagamento: ["mpesa", "emola", "paypal", "dinheiro"],
+      status_cadastro: ["pendente", "aprovado", "rejeitado"],
+      status_entrega: ["aceita", "em_transito", "entregue", "cancelada"],
+      status_pedido: [
+        "pendente",
+        "em_preparacao",
+        "a_caminho",
+        "entregue",
+        "cancelado",
+      ],
+      tipo_usuario: ["cliente", "entregador"],
+    },
   },
 } as const
