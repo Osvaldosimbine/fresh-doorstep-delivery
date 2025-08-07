@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 import breadIcon from "@/assets/bread-icon.jpg";
+import CustomerRegistrationForm from "@/components/CustomerRegistrationForm";
 
 const Header = () => {
   return (
@@ -40,9 +41,11 @@ const Header = () => {
 
         {/* Actions */}
         <div className="flex items-center gap-2">
-          <Button className="hidden sm:flex shadow-button-custom">
-            Quero Experimentar
-          </Button>
+          <CustomerRegistrationForm>
+            <Button className="hidden sm:flex shadow-button-custom">
+              Quero Experimentar
+            </Button>
+          </CustomerRegistrationForm>
           <Button variant="ghost" size="icon" className="md:hidden">
             <Menu className="h-5 w-5" />
           </Button>
