@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bike, Store } from "lucide-react";
 import BakeryRegistrationForm from "@/components/BakeryRegistrationForm";
+import DeliveryRegistrationForm from "@/components/DeliveryRegistrationForm";
 
 const JoinUs = () => {
   return (
@@ -39,12 +40,14 @@ const JoinUs = () => {
                 <li>• Suporte completo</li>
                 <li>• Área de cobertura ampla</li>
               </ul>
-              <Button 
-                variant="outline" 
-                className="w-full bg-white/10 border-white/20 text-white hover:bg-white hover:text-primary transition-all duration-300"
-              >
-                Cadastrar como Entregador
-              </Button>
+              <DeliveryRegistrationForm>
+                <Button 
+                  variant="outline" 
+                  className="w-full bg-white/10 border-white/20 text-white hover:bg-white hover:text-primary transition-all duration-300"
+                >
+                  Cadastrar como Entregador
+                </Button>
+              </DeliveryRegistrationForm>
             </CardContent>
           </Card>
 
