@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bike, Store } from "lucide-react";
+import BakeryRegistrationForm from "@/components/BakeryRegistrationForm";
 
 const JoinUs = () => {
   return (
@@ -67,9 +68,11 @@ const JoinUs = () => {
                 <li>• Marketing incluído</li>
                 <li>• Suporte especializado</li>
               </ul>
-              <Button className="w-full shadow-button-custom hover:scale-105 transition-transform">
-                Cadastrar Padaria
-              </Button>
+              <BakeryRegistrationForm>
+                <Button className="w-full shadow-button-custom hover:scale-105 transition-transform">
+                  Cadastrar Padaria
+                </Button>
+              </BakeryRegistrationForm>
             </CardContent>
           </Card>
         </div>
