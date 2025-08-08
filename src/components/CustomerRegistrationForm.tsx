@@ -23,11 +23,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import LocationSelect from "@/components/LocationSelect";
+import { MAPUTO_LOCATIONS } from "@/constants/locations";
 
 const customerRegistrationSchema = z.object({
   nome_completo: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   email: z.string().email("Email inválido"),
   telefone: z.string().min(10, "Telefone deve ter pelo menos 10 dígitos"),
+  localizacao: z.string().min(1, "Selecione uma localização"),
   endereco: z.string().min(10, "Endereço deve ter pelo menos 10 caracteres"),
 });
 
@@ -48,6 +51,7 @@ const CustomerRegistrationForm = ({ children }: CustomerRegistrationFormProps) =
       nome_completo: "",
       email: "",
       telefone: "",
+      localizacao: "",
       endereco: "",
     },
   });
@@ -80,7 +84,7 @@ const CustomerRegistrationForm = ({ children }: CustomerRegistrationFormProps) =
             nome_completo: data.nome_completo,
             email: data.email,
             telefone: data.telefone,
-            localizacao_atual: data.endereco,
+            localizacao_atual: data.localizacao,
             tipo_usuario: "cliente",
             status_cadastro: "pendente",
           });
@@ -161,6 +165,12 @@ const CustomerRegistrationForm = ({ children }: CustomerRegistrationFormProps) =
                   <FormMessage />
                 </FormItem>
               )}
+            />
+            <LocationSelect
+              control={form.control}
+              name="localizacao"
+              label="Localização"
+              placeholder="Selecione a sua área"
             />
             <FormField
               control={form.control}

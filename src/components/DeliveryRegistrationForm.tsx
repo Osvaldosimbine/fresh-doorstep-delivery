@@ -23,12 +23,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import LocationSelect from "@/components/LocationSelect";
+import { MAPUTO_LOCATIONS } from "@/constants/locations";
 
 const deliveryRegistrationSchema = z.object({
   nome_completo: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   email: z.string().email("Email inválido"),
   telefone: z.string().min(10, "Telefone deve ter pelo menos 10 dígitos"),
-  localizacao_atual: z.string().min(5, "Localização deve ter pelo menos 5 caracteres"),
+  localizacao_atual: z.string().min(1, "Selecione uma localização"),
 });
 
 type DeliveryRegistrationData = z.infer<typeof deliveryRegistrationSchema>;
@@ -162,21 +164,11 @@ const DeliveryRegistrationForm = ({ children }: DeliveryRegistrationFormProps) =
                 </FormItem>
               )}
             />
-            <FormField
+            <LocationSelect
               control={form.control}
               name="localizacao_atual"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Localização Atual</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Descreva sua região de atuação (bairro, cidade)"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              label="Localização Atual"
+              placeholder="Selecione a área onde trabalha"
             />
             <Button 
               type="submit" 

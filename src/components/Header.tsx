@@ -22,20 +22,17 @@ const Header = () => {
 
         {/* Navigation */}
         <nav className="hidden md:flex items-center gap-6">
-          <a href="#inicio" className="text-sm font-medium hover:text-primary transition-colors">
-            Início
+          <a href="/#products" className="text-sm font-medium hover:text-primary transition-colors">
+            Produtos
           </a>
-          <a href="#como-funciona" className="text-sm font-medium hover:text-primary transition-colors">
+          <a href="/pedidos" className="text-sm font-medium hover:text-primary transition-colors">
+            Fazer Pedido
+          </a>
+          <a href="/#como-funciona" className="text-sm font-medium hover:text-primary transition-colors">
             Como Funciona
           </a>
-          <a href="#baixe-app" className="text-sm font-medium hover:text-primary transition-colors">
-            Baixe o App
-          </a>
-          <a href="#junte-se" className="text-sm font-medium hover:text-primary transition-colors">
+          <a href="/#junte-se" className="text-sm font-medium hover:text-primary transition-colors">
             Junte-se a Nós
-          </a>
-          <a href="#contato" className="text-sm font-medium hover:text-primary transition-colors">
-            Contato
           </a>
         </nav>
 

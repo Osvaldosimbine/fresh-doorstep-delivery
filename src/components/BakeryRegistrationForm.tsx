@@ -9,12 +9,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import LocationSelect from "@/components/LocationSelect";
+import { MAPUTO_LOCATIONS } from "@/constants/locations";
 
 const bakerySchema = z.object({
   nome_padaria: z.string().min(2, "Nome da padaria deve ter pelo menos 2 caracteres"),
   endereco: z.string().min(5, "Endereço deve ter pelo menos 5 caracteres"),
   telefone: z.string().min(9, "Telefone deve ter pelo menos 9 dígitos"),
   email: z.string().email("Email inválido"),
+  localizacao: z.string().min(1, "Selecione uma localização"),
   horario_funcionamento: z.string().optional(),
 });
 
@@ -36,6 +39,7 @@ export default function BakeryRegistrationForm({ children }: BakeryRegistrationF
       endereco: "",
       telefone: "",
       email: "",
+      localizacao: "",
       horario_funcionamento: "",
     },
   });
@@ -43,12 +47,17 @@ export default function BakeryRegistrationForm({ children }: BakeryRegistrationF
   const onSubmit = async (values: BakeryFormData) => {
     setLoading(true);
     try {
+      const location = MAPUTO_LOCATIONS.find(loc => loc.value === values.localizacao);
+      
       const { data, error } = await supabase
         .from("padarias")
         .insert([
           {
             nome_padaria: values.nome_padaria,
             endereco: values.endereco,
+            localizacao: values.localizacao,
+            coordenadas_lat: location?.coordinates.lat,
+            coordenadas_lng: location?.coordinates.lng,
             horario_funcionamento: values.horario_funcionamento ? 
               { info: values.horario_funcionamento } : null,
           }
@@ -128,6 +137,13 @@ export default function BakeryRegistrationForm({ children }: BakeryRegistrationF
                   <FormMessage />
                 </FormItem>
               )}
+            />
+
+            <LocationSelect
+              control={form.control}
+              name="localizacao"
+              label="Localização *"
+              placeholder="Selecione a área da padaria"
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
