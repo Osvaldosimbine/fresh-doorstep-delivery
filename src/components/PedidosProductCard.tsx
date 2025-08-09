@@ -27,7 +27,7 @@ interface PedidosProductCardProps {
 
 const PedidosProductCard = ({ produto, padaria, onAddToCart, quantity }: PedidosProductCardProps) => {
   const handleDecrease = () => {
-    if (quantity > 1) {
+    if (quantity > 0) {
       onAddToCart({ ...produto, quantidade: -1 } as any, padaria);
     }
   };

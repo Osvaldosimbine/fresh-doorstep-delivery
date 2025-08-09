@@ -27,13 +27,23 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       let newItems;
       
       if (existingItem) {
-        newItems = state.items.map(item =>
-          item.id === action.payload.id
-            ? { ...item, quantidade: item.quantidade + (action.payload.quantidade || 1) }
-            : item
-        );
+        const newQuantity = existingItem.quantidade + (action.payload.quantidade || 1);
+        if (newQuantity <= 0) {
+          newItems = state.items.filter(item => item.id !== action.payload.id);
+        } else {
+          newItems = state.items.map(item =>
+            item.id === action.payload.id
+              ? { ...item, quantidade: newQuantity }
+              : item
+          );
+        }
       } else {
-        newItems = [...state.items, { ...action.payload, quantidade: action.payload.quantidade || 1 }];
+        const quantidade = action.payload.quantidade || 1;
+        if (quantidade > 0) {
+          newItems = [...state.items, { ...action.payload, quantidade }];
+        } else {
+          newItems = state.items;
+        }
       }
       
       const total = newItems.reduce((sum, item) => sum + (item.preco * item.quantidade), 0);

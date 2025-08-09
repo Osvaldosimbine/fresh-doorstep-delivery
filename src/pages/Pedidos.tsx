@@ -9,6 +9,9 @@ import BakeryCard from "@/components/BakeryCard";
 import LocationFilter from "@/components/LocationFilter";
 import CartSummary from "@/components/CartSummary";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
+import CheckoutCart from "@/components/CheckoutCart";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 
 interface Produto {
   id: string;
@@ -30,7 +33,8 @@ interface Padaria {
 const Pedidos = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedLocation, setSelectedLocation] = useState<string>(searchParams.get("localizacao") || "");
-  const { addItem, state } = useCart();
+  const [showCheckout, setShowCheckout] = useState(false);
+  const { addItem, updateQuantity, state } = useCart();
   const { toast } = useToast();
   const { padarias, loading } = usePadarias(selectedLocation);
 
@@ -40,24 +44,59 @@ const Pedidos = () => {
   };
 
   const handleAddToCart = (produto: Produto, padaria: Padaria) => {
-    addItem({
-      id: produto.id,
-      nome_produto: produto.nome_produto,
-      preco: produto.preco,
-      padaria_id: padaria.id,
-      padaria_nome: padaria.nome_padaria,
-    });
+    const quantity = (produto as any).quantidade || 1;
     
-    toast({
-      title: "Adicionado ao carrinho",
-      description: `${produto.nome_produto} foi adicionado ao carrinho`,
-    });
+    if (quantity < 0) {
+      const currentItem = state.items.find(item => item.id === produto.id);
+      if (currentItem && currentItem.quantidade > 1) {
+        updateQuantity(produto.id, currentItem.quantidade - 1);
+      } else if (currentItem) {
+        updateQuantity(produto.id, 0);
+      }
+    } else {
+      addItem({
+        id: produto.id,
+        nome_produto: produto.nome_produto,
+        preco: produto.preco,
+        padaria_id: padaria.id,
+        padaria_nome: padaria.nome_padaria,
+        quantidade: quantity,
+      });
+      
+      toast({
+        title: "Adicionado ao carrinho",
+        description: `${produto.nome_produto} foi adicionado ao carrinho`,
+      });
+    }
   };
 
   const getItemQuantity = (productId: string) => {
     const item = state.items.find(item => item.id === productId);
     return item?.quantidade || 0;
   };
+
+  if (showCheckout) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto px-4 py-8 max-w-2xl">
+          <div className="flex items-center gap-4 mb-6">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowCheckout(false)}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Voltar às padarias
+            </Button>
+          </div>
+          <CheckoutCart />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -69,7 +108,17 @@ const Pedidos = () => {
             <p className="text-muted-foreground">Escolha uma padaria e faça o seu pedido</p>
           </div>
           
-          <CartSummary itemCount={state.items.length} total={state.total} />
+          <div className="flex items-center gap-3">
+            <CartSummary itemCount={state.items.length} total={state.total} />
+            {state.items.length > 0 && (
+              <Button
+                onClick={() => setShowCheckout(true)}
+                className="bg-bread-golden hover:bg-bread-crust"
+              >
+                Finalizar Pedido
+              </Button>
+            )}
+          </div>
         </div>
 
         <LocationFilter 
