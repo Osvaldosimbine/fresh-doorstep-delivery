@@ -45,7 +45,7 @@ export const usePadarias = (selectedLocation: string) => {
         `)
         .eq("status_ativa", true);
 
-      if (selectedLocation) {
+      if (selectedLocation && selectedLocation !== "all") {
         query = query.eq("localizacao", selectedLocation);
       }
 

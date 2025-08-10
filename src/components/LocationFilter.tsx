@@ -14,7 +14,7 @@ const LocationFilter = ({ selectedLocation, onLocationChange }: LocationFilterPr
           <SelectValue placeholder="Filtrar por localização" />
         </SelectTrigger>
         <SelectContent className="bg-popover border-border">
-          <SelectItem value="" className="focus:bg-accent focus:text-accent-foreground">
+          <SelectItem value="all" className="focus:bg-accent focus:text-accent-foreground">
             Todas as localizações
           </SelectItem>
           {MAPUTO_LOCATIONS.map((location) => (

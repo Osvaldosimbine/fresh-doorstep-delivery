@@ -32,7 +32,7 @@ interface Padaria {
 
 const Pedidos = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [selectedLocation, setSelectedLocation] = useState<string>(searchParams.get("localizacao") || "");
+  const [selectedLocation, setSelectedLocation] = useState<string>(searchParams.get("localizacao") || "all");
   const [showCheckout, setShowCheckout] = useState(false);
   const { addItem, updateQuantity, state } = useCart();
   const { toast } = useToast();
@@ -40,7 +40,11 @@ const Pedidos = () => {
 
   const handleLocationChange = (location: string) => {
     setSelectedLocation(location);
-    setSearchParams({ localizacao: location });
+    if (location === "all") {
+      setSearchParams({});
+    } else {
+      setSearchParams({ localizacao: location });
+    }
   };
 
   const handleAddToCart = (produto: Produto, padaria: Padaria) => {

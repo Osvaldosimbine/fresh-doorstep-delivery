@@ -16,6 +16,7 @@ const CheckoutCart = () => {
   const [selectedLocation, setSelectedLocation] = useState("");
   const [complement, setComplement] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleUpdateQuantity = (itemId: string, newQuantity: number) => {
     if (newQuantity <= 0) {
@@ -25,7 +26,7 @@ const CheckoutCart = () => {
     }
   };
 
-  const handleFinalizePedido = () => {
+  const handleFinalizePedido = async () => {
     if (!selectedLocation) {
       toast({
         title: "Endereço necessário",
@@ -44,13 +45,27 @@ const CheckoutCart = () => {
       return;
     }
 
-    // Aqui seria implementada a lógica de finalização do pedido
-    toast({
-      title: "Pedido enviado!",
-      description: "Seu pedido foi enviado para a padaria. Você receberá uma confirmação em breve.",
-    });
+    setIsSubmitting(true);
     
-    clearCart();
+    try {
+      // Aqui seria implementada a lógica de finalização do pedido
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simular API call
+      
+      toast({
+        title: "Pedido enviado!",
+        description: "Seu pedido foi enviado para a padaria. Você receberá uma confirmação em breve.",
+      });
+      
+      clearCart();
+    } catch (error) {
+      toast({
+        title: "Erro ao enviar pedido",
+        description: "Tente novamente em alguns instantes.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (state.items.length === 0) {
@@ -177,8 +192,9 @@ const CheckoutCart = () => {
       <Button 
         className="w-full bg-bread-golden hover:bg-bread-crust"
         onClick={handleFinalizePedido}
+        disabled={isSubmitting}
       >
-        Finalizar Pedido - {state.total.toFixed(2)} MT
+        {isSubmitting ? "Enviando..." : `Finalizar Pedido - ${state.total.toFixed(2)} MT`}
       </Button>
     </div>
   );
