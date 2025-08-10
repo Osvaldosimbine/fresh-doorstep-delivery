@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Trash2, MapPin, CreditCard } from "lucide-react";
+import { Trash2, MapPin, CreditCard, TrendingDown } from "lucide-react";
 import { MAPUTO_LOCATIONS } from "@/constants/locations";
+import { Badge } from "@/components/ui/badge";
 
 const CheckoutCart = () => {
   const { state, removeItem, updateQuantity, clearCart } = useCart();
@@ -93,7 +94,28 @@ const CheckoutCart = () => {
               <div className="flex-1">
                 <h4 className="font-medium text-card-foreground">{item.nome_produto}</h4>
                 <p className="text-sm text-muted-foreground">{item.padaria_nome}</p>
-                <p className="text-sm font-semibold text-bread-crust">{item.preco.toFixed(2)} MT</p>
+                <div className="flex items-center gap-2">
+                  {item.desconto_aplicado > 0 ? (
+                    <>
+                      <span className="text-xs text-muted-foreground line-through">
+                        {item.preco_original.toFixed(2)} MT
+                      </span>
+                      <p className="text-sm font-semibold text-bread-crust">
+                        {item.preco.toFixed(2)} MT
+                      </p>
+                      <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
+                        -{item.desconto_aplicado.toFixed(1)} MT
+                      </Badge>
+                    </>
+                  ) : (
+                    <p className="text-sm font-semibold text-bread-crust">{item.preco.toFixed(2)} MT</p>
+                  )}
+                </div>
+                {item.economia_total > 0 && (
+                  <p className="text-xs text-green-600 font-medium">
+                    Economia: {item.economia_total.toFixed(2)} MT
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -127,8 +149,27 @@ const CheckoutCart = () => {
           
           <Separator />
           
+          {state.totalSavings > 0 && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
+              <div className="flex items-center gap-2 text-green-700">
+                <TrendingDown className="h-4 w-4" />
+                <span className="font-semibold text-sm">Desconto por Quantidade Aplicado!</span>
+              </div>
+              <div className="space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Subtotal original:</span>
+                  <span className="line-through">{state.originalTotal.toFixed(2)} MT</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-green-600 font-medium">Economia total:</span>
+                  <span className="text-green-600 font-semibold">-{state.totalSavings.toFixed(2)} MT</span>
+                </div>
+              </div>
+            </div>
+          )}
+          
           <div className="flex justify-between items-center font-semibold text-lg">
-            <span>Total:</span>
+            <span>Total a pagar:</span>
             <span className="text-bread-crust">{state.total.toFixed(2)} MT</span>
           </div>
         </CardContent>

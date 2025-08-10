@@ -34,7 +34,7 @@ const Pedidos = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedLocation, setSelectedLocation] = useState<string>(searchParams.get("localizacao") || "all");
   const [showCheckout, setShowCheckout] = useState(false);
-  const { addItem, updateQuantity, state } = useCart();
+  const { addItem, updateQuantity, state, getItemQuantity } = useCart();
   const { toast } = useToast();
   const { padarias, loading } = usePadarias(selectedLocation);
 
@@ -72,11 +72,6 @@ const Pedidos = () => {
         description: `${produto.nome_produto} foi adicionado ao carrinho`,
       });
     }
-  };
-
-  const getItemQuantity = (productId: string) => {
-    const item = state.items.find(item => item.id === productId);
-    return item?.quantidade || 0;
   };
 
   if (showCheckout) {

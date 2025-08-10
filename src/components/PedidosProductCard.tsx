@@ -1,5 +1,7 @@
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Minus, Plus } from "lucide-react";
+import { calculateBulkDiscount, getDiscountTier } from "@/lib/discount";
 
 interface Produto {
   id: string;
@@ -36,17 +38,47 @@ const PedidosProductCard = ({ produto, padaria, onAddToCart, quantity }: Pedidos
     onAddToCart(produto, padaria);
   };
 
+  // Calculate discount for current quantity
+  const discountInfo = quantity > 0 ? calculateBulkDiscount(produto.preco, quantity) : null;
+
   return (
     <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-card hover:border-bread-golden transition-colors duration-200">
       <div className="flex-1 space-y-1">
         <h5 className="font-medium text-card-foreground">{produto.nome_produto}</h5>
         <p className="text-sm text-muted-foreground">{produto.tipo_pao}</p>
-        <div className="flex items-center gap-2">
-          <p className="font-semibold text-bread-crust">{produto.preco.toFixed(2)} MT</p>
-          {produto.estoque_atual <= 5 && produto.estoque_atual > 0 && (
-            <span className="text-xs text-destructive font-medium">
-              Estoque baixo ({produto.estoque_atual})
-            </span>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            {discountInfo ? (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground line-through">
+                  {produto.preco.toFixed(2)} MT
+                </span>
+                <p className="font-semibold text-bread-crust">
+                  {discountInfo.discountedPrice.toFixed(2)} MT
+                </p>
+                <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
+                  -{discountInfo.discountAmount.toFixed(1)} MT
+                </Badge>
+              </div>
+            ) : (
+              <p className="font-semibold text-bread-crust">{produto.preco.toFixed(2)} MT</p>
+            )}
+            {produto.estoque_atual <= 5 && produto.estoque_atual > 0 && (
+              <span className="text-xs text-destructive font-medium">
+                Estoque baixo ({produto.estoque_atual})
+              </span>
+            )}
+          </div>
+          
+          {quantity > 0 && discountInfo && (
+            <div className="space-y-1">
+              <p className="text-xs text-green-600 font-medium">
+                Economia total: {discountInfo.totalSavings.toFixed(2)} MT
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {getDiscountTier(quantity)}
+              </p>
+            </div>
           )}
         </div>
       </div>
