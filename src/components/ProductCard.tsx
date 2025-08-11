@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Minus, Star } from "lucide-react";
-import { useState } from "react";
+import { Star } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface ProductCardProps {
   id: string;
@@ -15,16 +15,7 @@ interface ProductCardProps {
   inStock: boolean;
 }
 
-const ProductCard = ({ name, description, price, image, bakery, rating, inStock }: ProductCardProps) => {
-  const [quantity, setQuantity] = useState(0);
-
-  const handleAddToCart = () => {
-    setQuantity(prev => prev + 1);
-  };
-
-  const handleRemoveFromCart = () => {
-    setQuantity(prev => Math.max(0, prev - 1));
-  };
+const ProductCard = ({ id, name, description, price, image, bakery, rating, inStock }: ProductCardProps) => {
 
   return (
     <Card className="group hover:shadow-card-custom transition-all duration-300 hover:-translate-y-1 bg-gradient-warm border-border/50">
@@ -65,37 +56,15 @@ const ProductCard = ({ name, description, price, image, bakery, rating, inStock 
       </CardContent>
       
       <CardFooter className="p-4 pt-0">
-        {quantity === 0 ? (
+        <Link to={`/product/${id}`} className="w-full">
           <Button 
-            onClick={handleAddToCart}
             disabled={!inStock}
             variant="golden" 
             className="w-full"
           >
-            <Plus className="h-4 w-4 mr-2" />
-            Adicionar ao Carrinho
+            {inStock ? "Ver Detalhes" : "Esgotado"}
           </Button>
-        ) : (
-          <div className="flex items-center justify-between w-full">
-            <Button
-              onClick={handleRemoveFromCart}
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-            >
-              <Minus className="h-4 w-4" />
-            </Button>
-            <span className="font-semibold text-lg px-4">{quantity}</span>
-            <Button
-              onClick={handleAddToCart}
-              variant="golden"
-              size="icon"
-              className="h-8 w-8"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
+        </Link>
       </CardFooter>
     </Card>
   );

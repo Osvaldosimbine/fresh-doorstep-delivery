@@ -7,6 +7,8 @@ import { CartProvider } from "./contexts/CartContext";
 import Index from "./pages/Index";
 import Pedidos from "./pages/Pedidos";
 import Admin from "./pages/Admin";
+import ProductDetail from "./pages/ProductDetail";
+import OrderConfirmation from "./pages/OrderConfirmation";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -20,6 +22,8 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/product/:id" element={<ProductDetail />} />
+            <Route path="/order-confirmation" element={<OrderConfirmation />} />
             <Route path="/pedidos" element={<Pedidos />} />
             <Route path="/admin" element={<Admin />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
