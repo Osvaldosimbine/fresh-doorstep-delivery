@@ -62,8 +62,7 @@ const Pedidos = () => {
         id: produto.id,
         nome_produto: produto.nome_produto,
         preco: produto.preco,
-        padaria_id: padaria.id,
-        padaria_nome: padaria.nome_padaria,
+        padaria: padaria.nome_padaria,
         quantidade: quantity,
       });
       

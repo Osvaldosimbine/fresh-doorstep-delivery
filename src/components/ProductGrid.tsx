@@ -13,8 +13,11 @@ interface Produto {
   preco: number;
   tipo_pao: string;
   padaria_id: string;
+  disponivel: boolean;
+  estoque_atual: number;
   padarias: {
     nome_padaria: string;
+    localizacao?: string;
   };
 }
 
@@ -36,8 +39,11 @@ const ProductGrid = () => {
           preco,
           tipo_pao,
           padaria_id,
+          disponivel,
+          estoque_atual,
           padarias!inner (
-            nome_padaria
+            nome_padaria,
+            localizacao
           )
         `)
         .eq("disponivel", true)
@@ -102,14 +108,19 @@ const ProductGrid = () => {
           {produtos.map((produto) => (
             <ProductCard 
               key={produto.id} 
-              id={produto.id}
-              name={produto.nome_produto}
-              description={`Delicioso ${produto.tipo_pao} da ${produto.padarias.nome_padaria}`}
-              price={produto.preco}
-              image={getImageForType(produto.tipo_pao)}
-              bakery={produto.padarias.nome_padaria}
-              rating={4.5}
-              inStock={true}
+              product={{
+                id: produto.id,
+                nome_produto: produto.nome_produto,
+                preco: produto.preco,
+                tipo_pao: produto.tipo_pao,
+                imagem_url: getImageForType(produto.tipo_pao),
+                padaria: {
+                  nome_padaria: produto.padarias.nome_padaria,
+                  localizacao: produto.padarias.localizacao
+                },
+                disponivel: produto.disponivel,
+                estoque_atual: produto.estoque_atual
+              }}
             />
           ))}
         </div>

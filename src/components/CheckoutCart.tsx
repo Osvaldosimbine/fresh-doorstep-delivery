@@ -93,7 +93,7 @@ const CheckoutCart = () => {
             <div key={item.id} className="flex items-center justify-between p-3 border border-border rounded-lg">
               <div className="flex-1">
                 <h4 className="font-medium text-card-foreground">{item.nome_produto}</h4>
-                <p className="text-sm text-muted-foreground">{item.padaria_nome}</p>
+                <p className="text-sm text-muted-foreground">{item.padaria}</p>
                 <div className="flex items-center gap-2">
                   {item.desconto_aplicado > 0 ? (
                     <>

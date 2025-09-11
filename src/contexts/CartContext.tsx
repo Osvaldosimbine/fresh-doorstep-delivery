@@ -7,8 +7,7 @@ export interface CartItem {
   preco: number;
   preco_original: number;
   quantidade: number;
-  padaria_id: string;
-  padaria_nome: string;
+  padaria: string;
   desconto_aplicado: number;
   economia_total: number;
 }
@@ -119,11 +118,16 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 
 const CartContext = createContext<{
   state: CartState;
+  items: CartItem[];
   addItem: (item: Omit<CartItem, "quantidade" | "preco_original" | "desconto_aplicado" | "economia_total"> & { quantidade?: number }) => void;
+  addToCart: (item: Omit<CartItem, "quantidade" | "preco_original" | "desconto_aplicado" | "economia_total"> & { quantidade?: number }) => void;
   removeItem: (id: string) => void;
+  removeFromCart: (id: string) => void;
   updateQuantity: (id: string, quantidade: number) => void;
   clearCart: () => void;
   getItemQuantity: (id: string) => number;
+  getTotal: () => number;
+  getTotalSavings: () => number;
 } | null>(null);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -138,7 +142,15 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     dispatch({ type: "ADD_ITEM", payload: item });
   };
 
+  const addToCart = (item: Omit<CartItem, "quantidade" | "preco_original" | "desconto_aplicado" | "economia_total"> & { quantidade?: number }) => {
+    dispatch({ type: "ADD_ITEM", payload: item });
+  };
+
   const removeItem = (id: string) => {
+    dispatch({ type: "REMOVE_ITEM", payload: { id } });
+  };
+
+  const removeFromCart = (id: string) => {
     dispatch({ type: "REMOVE_ITEM", payload: { id } });
   };
 
@@ -155,14 +167,23 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return item ? item.quantidade : 0;
   };
 
+  const getTotal = () => state.total;
+  
+  const getTotalSavings = () => state.totalSavings;
+
   return (
     <CartContext.Provider value={{ 
       state, 
+      items: state.items,
       addItem, 
+      addToCart,
       removeItem, 
+      removeFromCart,
       updateQuantity, 
       clearCart, 
-      getItemQuantity 
+      getItemQuantity,
+      getTotal,
+      getTotalSavings
     }}>
       {children}
     </CartContext.Provider>

@@ -1,71 +1,110 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Star } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { MapPin, ShoppingCart } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCart } from "@/contexts/CartContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface ProductCardProps {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  image: string;
-  bakery: string;
-  rating: number;
-  inStock: boolean;
+  product: {
+    id: string;
+    nome_produto: string;
+    preco: number;
+    tipo_pao?: string;
+    imagem_url?: string;
+    padaria?: {
+      nome_padaria: string;
+      localizacao?: string;
+    };
+    disponivel: boolean;
+    estoque_atual: number;
+  };
 }
 
-const ProductCard = ({ id, name, description, price, image, bakery, rating, inStock }: ProductCardProps) => {
+const ProductCard = ({ product }: ProductCardProps) => {
+  const { user } = useAuth();
+  const { addToCart } = useCart();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  const handleAddToCart = () => {
+    if (!user) {
+      navigate('/register');
+      return;
+    }
+    
+    addToCart({
+      id: product.id,
+      nome_produto: product.nome_produto,
+      preco: product.preco,
+      padaria: product.padaria?.nome_padaria || 'Padaria',
+    });
+    
+    toast({
+      title: "Produto adicionado!",
+      description: `${product.nome_produto} foi adicionado ao carrinho.`,
+    });
+  };
 
   return (
     <Card className="group hover:shadow-card-custom transition-all duration-300 hover:-translate-y-1 bg-gradient-warm border-border/50">
       <CardContent className="p-0">
         <div className="relative overflow-hidden rounded-t-md">
           <img 
-            src={image} 
-            alt={name}
+            src={product.imagem_url || "/placeholder.svg"} 
+            alt={product.nome_produto}
             className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
           />
-          {!inStock && (
+          {!product.disponivel && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
               <Badge variant="destructive">Esgotado</Badge>
             </div>
           )}
-          <div className="absolute top-2 right-2">
-            <Badge className="bg-white/90 text-bread-crust">
-              <Star className="h-3 w-3 mr-1 fill-current" />
-              {rating}
-            </Badge>
-          </div>
         </div>
         
         <div className="p-4">
-          <h3 className="font-semibold text-lg text-bread-crust mb-1">{name}</h3>
-          <p className="text-sm text-muted-foreground mb-2">{description}</p>
-          <p className="text-xs text-muted-foreground mb-3">📍 {bakery}</p>
+          <h3 className="font-semibold text-lg text-bread-crust mb-1">{product.nome_produto}</h3>
+          <p className="text-sm text-muted-foreground mb-2">{product.tipo_pao || 'Pão artesanal'}</p>
           
-          <div className="flex items-center justify-between">
+          {product.padaria && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground mb-3">
+              <MapPin className="h-3 w-3" />
+              <span>{product.padaria.nome_padaria}</span>
+              {product.padaria.localizacao && (
+                <span>• {product.padaria.localizacao}</span>
+              )}
+            </div>
+          )}
+          
+          <div className="flex items-center justify-between mb-4">
             <div className="text-2xl font-bold text-primary">
-              {price} MT
+              {product.preco.toFixed(2)} MT
             </div>
             <Badge variant="secondary" className="text-xs">
               Entrega incluída
             </Badge>
           </div>
+          
+          <div className="flex justify-between items-center gap-2">
+            <Link to={`/product/${product.id}`}>
+              <Button variant="outline" size="sm">
+                Ver Detalhes
+              </Button>
+            </Link>
+            <Button 
+              onClick={handleAddToCart}
+              size="sm" 
+              className="flex items-center gap-1"
+              disabled={!product.disponivel}
+            >
+              <ShoppingCart className="h-4 w-4" />
+              Adicionar
+            </Button>
+          </div>
         </div>
       </CardContent>
-      
-      <CardFooter className="p-4 pt-0">
-        <Link to={`/product/${id}`} className="w-full">
-          <Button 
-            disabled={!inStock}
-            variant="golden" 
-            className="w-full"
-          >
-            {inStock ? "Ver Detalhes" : "Esgotado"}
-          </Button>
-        </Link>
-      </CardFooter>
     </Card>
   );
 };
