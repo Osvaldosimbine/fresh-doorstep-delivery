@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Trash2, MapPin, CreditCard, TrendingDown } from "lucide-react";
 import { MAPUTO_LOCATIONS } from "@/constants/locations";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
 
 const CheckoutCart = () => {
   const { state, removeItem, updateQuantity, clearCart } = useCart();
@@ -28,40 +29,51 @@ const CheckoutCart = () => {
   };
 
   const handleFinalizePedido = async () => {
-    if (!selectedLocation) {
+    if (!selectedLocation || !paymentMethod) {
       toast({
-        title: "Endereço necessário",
-        description: "Por favor, selecione uma localização para entrega",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!paymentMethod) {
-      toast({
-        title: "Forma de pagamento necessária",
-        description: "Por favor, selecione uma forma de pagamento",
+        title: "Informações incompletas",
+        description: "Por favor, selecione a localização e forma de pagamento.",
         variant: "destructive",
       });
       return;
     }
 
     setIsSubmitting(true);
-    
+
     try {
-      // Aqui seria implementada a lógica de finalização do pedido
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simular API call
-      
-      toast({
-        title: "Pedido enviado!",
-        description: "Seu pedido foi enviado para a padaria. Você receberá uma confirmação em breve.",
+      // Prepare order data for secure processing
+      const orderData = {
+        produtos: state.items.map(item => ({
+          id: item.id,
+          quantidade: item.quantidade,
+          preco_unitario: item.preco
+        })),
+        endereco_entrega: `${selectedLocation}${complement ? `, ${complement}` : ''}`,
+        forma_pagamento: paymentMethod as 'dinheiro' | 'cartao' | 'mbway',
+        observacoes: complement
+      };
+
+      // Process order through secure Edge Function
+      const { data, error } = await supabase.functions.invoke('process-order', {
+        body: orderData
       });
-      
-      clearCart();
-    } catch (error) {
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast({
+          title: "Pedido realizado com sucesso!",
+          description: data.message || "Você receberá uma confirmação em breve.",
+        });
+        clearCart();
+      } else {
+        throw new Error(data?.error || 'Unknown error occurred');
+      }
+    } catch (error: any) {
+      console.error('Order processing error:', error);
       toast({
-        title: "Erro ao enviar pedido",
-        description: "Tente novamente em alguns instantes.",
+        title: "Erro ao processar pedido",
+        description: error.message || "Tente novamente em alguns instantes.",
         variant: "destructive",
       });
     } finally {

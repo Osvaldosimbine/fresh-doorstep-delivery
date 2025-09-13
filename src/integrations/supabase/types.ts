@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+          record_id: string | null
+          table_name: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          table_name: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          table_name?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       entregas: {
         Row: {
           comissao_percentual: number
@@ -320,6 +353,7 @@ export type Database = {
           localizacao: string | null
           nome_completo: string
           numero_documento: string | null
+          role: string | null
           status_cadastro: Database["public"]["Enums"]["status_cadastro"]
           telefone: string
           tipo_usuario: Database["public"]["Enums"]["tipo_usuario"]
@@ -335,6 +369,7 @@ export type Database = {
           localizacao?: string | null
           nome_completo: string
           numero_documento?: string | null
+          role?: string | null
           status_cadastro?: Database["public"]["Enums"]["status_cadastro"]
           telefone: string
           tipo_usuario?: Database["public"]["Enums"]["tipo_usuario"]
@@ -350,6 +385,7 @@ export type Database = {
           localizacao?: string | null
           nome_completo?: string
           numero_documento?: string | null
+          role?: string | null
           status_cadastro?: Database["public"]["Enums"]["status_cadastro"]
           telefone?: string
           tipo_usuario?: Database["public"]["Enums"]["tipo_usuario"]
@@ -405,7 +441,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { user_uuid?: string }
+        Returns: string
+      }
+      is_admin: {
+        Args: { user_uuid?: string }
+        Returns: boolean
+      }
     }
     Enums: {
       forma_pagamento: "mpesa" | "emola" | "paypal" | "dinheiro"

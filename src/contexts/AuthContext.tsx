@@ -27,6 +27,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   const signUp = async (email: string, password: string, userData: any) => {
+    // First validate user data server-side
+    const { data: validation } = await supabase.functions.invoke('secure-auth', {
+      body: { action: 'validate_user_data', userData }
+    });
+
+    if (!validation?.valid) {
+      return { error: { message: validation?.errors?.join(', ') || 'Invalid user data' } };
+    }
+
     const redirectUrl = `${window.location.origin}/`;
     
     const { error } = await supabase.auth.signUp({

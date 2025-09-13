@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Calendar, DollarSign, Package, Settings, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
@@ -33,8 +35,11 @@ interface PricingConfig {
 }
 
 const Admin = () => {
+  const { user, loading } = useAuth();
   const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [checkingAdmin, setCheckingAdmin] = useState(true);
   const [pricingConfig, setPricingConfig] = useState<PricingConfig>({
     basePrice: 15.00,
     discount1_49: 2.00,
@@ -43,8 +48,42 @@ const Admin = () => {
   });
   const { toast } = useToast();
 
+  // Check if user is admin
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!user) {
+        setCheckingAdmin(false);
+        return;
+      }
+
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error) {
+          console.error('Error checking admin status:', error);
+          setIsAdmin(false);
+        } else {
+          setIsAdmin(profile?.role === 'admin');
+        }
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+        setIsAdmin(false);
+      } finally {
+        setCheckingAdmin(false);
+      }
+    };
+
+    checkAdminStatus();
+  }, [user]);
+
   // Mock data for demonstration
   useEffect(() => {
+    if (!isAdmin) return;
+
     const mockOrders: OrderSummary[] = [
       {
         id: "1",
@@ -74,7 +113,7 @@ const Admin = () => {
       }
     ];
     setOrders(mockOrders);
-  }, [selectedDate]);
+  }, [selectedDate, isAdmin]);
 
   const handleUpdatePricing = () => {
     toast({
@@ -89,6 +128,48 @@ const Admin = () => {
   const totalSingular = singularOrders.reduce((sum, o) => sum + o.totalPrice, 0);
   const totalRevenda = revendaOrders.reduce((sum, o) => sum + o.totalPrice, 0);
   const totalSavings = orders.reduce((sum, o) => sum + o.savings, 0);
+
+  // Loading states
+  if (loading || checkingAdmin) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Verificando permissões...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Not logged in
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Acesso Restrito</h1>
+          <p className="mb-4">Faça login para acessar o painel administrativo.</p>
+          <Button onClick={() => window.location.href = '/register'}>
+            Fazer Login
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Not admin
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Acesso Negado</h1>
+          <p className="mb-4">Você não tem permissão para acessar esta página.</p>
+          <Button onClick={() => window.location.href = '/'}>
+            Voltar à Página Inicial
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
