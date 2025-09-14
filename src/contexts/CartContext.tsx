@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer } from "react";
 import { calculateBulkDiscount } from "@/lib/discount";
+import { calculateServiceFee, getLocationCoordinates, DEFAULT_BAKERY_LOCATION, type Location } from "@/lib/serviceFee";
 
 export interface CartItem {
   id: string;
@@ -10,6 +11,9 @@ export interface CartItem {
   padaria: string;
   desconto_aplicado: number;
   economia_total: number;
+  taxa_servico_unitaria?: number;
+  taxa_servico_total?: number;
+  distancia_km?: number;
 }
 
 interface CartState {
@@ -17,20 +21,24 @@ interface CartState {
   total: number;
   totalSavings: number;
   originalTotal: number;
+  totalServiceFee: number;
 }
 
 type CartAction =
-  | { type: "ADD_ITEM"; payload: Omit<CartItem, "quantidade" | "preco_original" | "desconto_aplicado" | "economia_total"> & { quantidade?: number } }
+  | { type: "ADD_ITEM"; payload: Omit<CartItem, "quantidade" | "preco_original" | "desconto_aplicado" | "economia_total" | "taxa_servico_unitaria" | "taxa_servico_total" | "distancia_km"> & { quantidade?: number } }
   | { type: "REMOVE_ITEM"; payload: { id: string } }
   | { type: "UPDATE_QUANTITY"; payload: { id: string; quantidade: number } }
+  | { type: "UPDATE_SERVICE_FEES"; payload: { userLocation: { lat: number; lng: number } } }
   | { type: "CLEAR_CART" };
 
 const calculateCartTotals = (items: CartItem[]) => {
-  const total = items.reduce((sum, item) => sum + (item.preco * item.quantidade), 0);
+  const subtotal = items.reduce((sum, item) => sum + (item.preco * item.quantidade), 0);
+  const totalServiceFee = items.reduce((sum, item) => sum + (item.taxa_servico_total || 0), 0);
+  const total = subtotal + totalServiceFee;
   const originalTotal = items.reduce((sum, item) => sum + (item.preco_original * item.quantidade), 0);
   const totalSavings = items.reduce((sum, item) => sum + item.economia_total, 0);
   
-  return { total, originalTotal, totalSavings };
+  return { total, originalTotal, totalSavings, totalServiceFee };
 };
 
 const cartReducer = (state: CartState, action: CartAction): CartState => {
@@ -108,8 +116,26 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       return { items: newItems, ...totals };
     }
     
+    case "UPDATE_SERVICE_FEES": {
+      const newItems = state.items.map(item => {
+        const serviceFeeInfo = calculateServiceFee(
+          action.payload.userLocation, 
+          DEFAULT_BAKERY_LOCATION, 
+          item.quantidade
+        );
+        return {
+          ...item,
+          taxa_servico_unitaria: serviceFeeInfo.feePerUnit,
+          taxa_servico_total: serviceFeeInfo.totalFee,
+          distancia_km: serviceFeeInfo.distanceKm
+        };
+      });
+      const totals = calculateCartTotals(newItems);
+      return { items: newItems, ...totals };
+    }
+    
     case "CLEAR_CART":
-      return { items: [], total: 0, totalSavings: 0, originalTotal: 0 };
+      return { items: [], total: 0, totalSavings: 0, originalTotal: 0, totalServiceFee: 0 };
     
     default:
       return state;
@@ -119,15 +145,17 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 const CartContext = createContext<{
   state: CartState;
   items: CartItem[];
-  addItem: (item: Omit<CartItem, "quantidade" | "preco_original" | "desconto_aplicado" | "economia_total"> & { quantidade?: number }) => void;
-  addToCart: (item: Omit<CartItem, "quantidade" | "preco_original" | "desconto_aplicado" | "economia_total"> & { quantidade?: number }) => void;
+  addItem: (item: Omit<CartItem, "quantidade" | "preco_original" | "desconto_aplicado" | "economia_total" | "taxa_servico_unitaria" | "taxa_servico_total" | "distancia_km"> & { quantidade?: number }) => void;
+  addToCart: (item: Omit<CartItem, "quantidade" | "preco_original" | "desconto_aplicado" | "economia_total" | "taxa_servico_unitaria" | "taxa_servico_total" | "distancia_km"> & { quantidade?: number }) => void;
   removeItem: (id: string) => void;
   removeFromCart: (id: string) => void;
   updateQuantity: (id: string, quantidade: number) => void;
+  updateServiceFees: (userLocation: Location) => void;
   clearCart: () => void;
   getItemQuantity: (id: string) => number;
   getTotal: () => number;
   getTotalSavings: () => number;
+  getTotalServiceFee: () => number;
 } | null>(null);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -135,14 +163,15 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     items: [], 
     total: 0, 
     totalSavings: 0, 
-    originalTotal: 0 
+    originalTotal: 0,
+    totalServiceFee: 0
   });
 
-  const addItem = (item: Omit<CartItem, "quantidade" | "preco_original" | "desconto_aplicado" | "economia_total"> & { quantidade?: number }) => {
+  const addItem = (item: Omit<CartItem, "quantidade" | "preco_original" | "desconto_aplicado" | "economia_total" | "taxa_servico_unitaria" | "taxa_servico_total" | "distancia_km"> & { quantidade?: number }) => {
     dispatch({ type: "ADD_ITEM", payload: item });
   };
 
-  const addToCart = (item: Omit<CartItem, "quantidade" | "preco_original" | "desconto_aplicado" | "economia_total"> & { quantidade?: number }) => {
+  const addToCart = (item: Omit<CartItem, "quantidade" | "preco_original" | "desconto_aplicado" | "economia_total" | "taxa_servico_unitaria" | "taxa_servico_total" | "distancia_km"> & { quantidade?: number }) => {
     dispatch({ type: "ADD_ITEM", payload: item });
   };
 
@@ -158,6 +187,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     dispatch({ type: "UPDATE_QUANTITY", payload: { id, quantidade } });
   };
 
+  const updateServiceFees = (userLocation: Location) => {
+    dispatch({ type: "UPDATE_SERVICE_FEES", payload: { userLocation } });
+  };
+
   const clearCart = () => {
     dispatch({ type: "CLEAR_CART" });
   };
@@ -171,6 +204,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   const getTotalSavings = () => state.totalSavings;
 
+  const getTotalServiceFee = () => state.totalServiceFee;
+
   return (
     <CartContext.Provider value={{ 
       state, 
@@ -179,11 +214,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       addToCart,
       removeItem, 
       removeFromCart,
-      updateQuantity, 
+      updateQuantity,
+      updateServiceFees,
       clearCart, 
       getItemQuantity,
       getTotal,
-      getTotalSavings
+      getTotalSavings,
+      getTotalServiceFee
     }}>
       {children}
     </CartContext.Provider>

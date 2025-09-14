@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -7,24 +7,42 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Trash2, MapPin, CreditCard, TrendingDown } from "lucide-react";
+import { Trash2, MapPin, CreditCard, TrendingDown, Truck } from "lucide-react";
 import { MAPUTO_LOCATIONS } from "@/constants/locations";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { getLocationCoordinates, getServiceFeeTier } from "@/lib/serviceFee";
 
 const CheckoutCart = () => {
-  const { state, removeItem, updateQuantity, clearCart } = useCart();
+  const { state, removeItem, updateQuantity, updateServiceFees, clearCart } = useCart();
   const { toast } = useToast();
   const [selectedLocation, setSelectedLocation] = useState("");
   const [complement, setComplement] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Update service fees when location changes
+  useEffect(() => {
+    if (selectedLocation && state.items.length > 0) {
+      const coordinates = getLocationCoordinates(selectedLocation);
+      if (coordinates) {
+        updateServiceFees(coordinates);
+      }
+    }
+  }, [selectedLocation, state.items.length]);
+
   const handleUpdateQuantity = (itemId: string, newQuantity: number) => {
     if (newQuantity <= 0) {
       removeItem(itemId);
     } else {
       updateQuantity(itemId, newQuantity);
+      // Recalculate service fees if location is selected
+      if (selectedLocation) {
+        const coordinates = getLocationCoordinates(selectedLocation);
+        if (coordinates) {
+          updateServiceFees(coordinates);
+        }
+      }
     }
   };
 
@@ -50,7 +68,9 @@ const CheckoutCart = () => {
         })),
         endereco_entrega: `${selectedLocation}${complement ? `, ${complement}` : ''}`,
         forma_pagamento: paymentMethod as 'dinheiro' | 'cartao' | 'mbway',
-        observacoes: complement
+        observacoes: complement,
+        taxa_servico_total: state.totalServiceFee,
+        localizacao_entrega: selectedLocation
       };
 
       // Process order through secure Edge Function
@@ -123,11 +143,19 @@ const CheckoutCart = () => {
                     <p className="text-sm font-semibold text-bread-crust">{item.preco.toFixed(2)} MT</p>
                   )}
                 </div>
-                {item.economia_total > 0 && (
-                  <p className="text-xs text-green-600 font-medium">
-                    Economia: {item.economia_total.toFixed(2)} MT
-                  </p>
-                )}
+                
+                <div className="space-y-1">
+                  {item.economia_total > 0 && (
+                    <p className="text-xs text-green-600 font-medium">
+                      Economia: {item.economia_total.toFixed(2)} MT
+                    </p>
+                  )}
+                  {item.taxa_servico_unitaria && (
+                    <p className="text-xs text-orange-600 font-medium">
+                      Taxa de serviço: +{item.taxa_servico_unitaria.toFixed(2)} MT/un ({item.distancia_km}km)
+                    </p>
+                  )}
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -161,24 +189,51 @@ const CheckoutCart = () => {
           
           <Separator />
           
-          {state.totalSavings > 0 && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
-              <div className="flex items-center gap-2 text-green-700">
-                <TrendingDown className="h-4 w-4" />
-                <span className="font-semibold text-sm">Desconto por Quantidade Aplicado!</span>
-              </div>
-              <div className="space-y-1">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Subtotal original:</span>
-                  <span className="line-through">{state.originalTotal.toFixed(2)} MT</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-green-600 font-medium">Economia total:</span>
-                  <span className="text-green-600 font-semibold">-{state.totalSavings.toFixed(2)} MT</span>
-                </div>
-              </div>
+          {/* Detailed Breakdown */}
+          <div className="space-y-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Subtotal (produtos):</span>
+              <span>{(state.total - state.totalServiceFee).toFixed(2)} MT</span>
             </div>
-          )}
+            
+            {state.totalSavings > 0 && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
+                <div className="flex items-center gap-2 text-green-700">
+                  <TrendingDown className="h-4 w-4" />
+                  <span className="font-semibold text-sm">Desconto por Quantidade Aplicado!</span>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Subtotal original:</span>
+                    <span className="line-through">{state.originalTotal.toFixed(2)} MT</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-green-600 font-medium">Economia total:</span>
+                    <span className="text-green-600 font-semibold">-{state.totalSavings.toFixed(2)} MT</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {state.totalServiceFee > 0 && selectedLocation && (
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 space-y-2">
+                <div className="flex items-center gap-2 text-orange-700">
+                  <Truck className="h-4 w-4" />
+                  <span className="font-semibold text-sm">Taxa de Entrega</span>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      {state.items[0]?.distancia_km && getServiceFeeTier(state.items[0].distancia_km)}
+                    </span>
+                    <span className="text-orange-600 font-semibold">+{state.totalServiceFee.toFixed(2)} MT</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <Separator />
           
           <div className="flex justify-between items-center font-semibold text-lg">
             <span>Total a pagar:</span>
