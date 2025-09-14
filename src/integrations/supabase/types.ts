@@ -246,36 +246,45 @@ export type Database = {
         Row: {
           cliente_id: string
           created_at: string
+          distancia_km: number | null
           endereco_entrega: string
           forma_pagamento: Database["public"]["Enums"]["forma_pagamento"]
           id: string
+          localizacao_entrega: string | null
           observacoes: string | null
           padaria_id: string
           status_pedido: Database["public"]["Enums"]["status_pedido"]
+          taxa_servico_total: number | null
           updated_at: string
           valor_total: number
         }
         Insert: {
           cliente_id: string
           created_at?: string
+          distancia_km?: number | null
           endereco_entrega: string
           forma_pagamento: Database["public"]["Enums"]["forma_pagamento"]
           id?: string
+          localizacao_entrega?: string | null
           observacoes?: string | null
           padaria_id: string
           status_pedido?: Database["public"]["Enums"]["status_pedido"]
+          taxa_servico_total?: number | null
           updated_at?: string
           valor_total: number
         }
         Update: {
           cliente_id?: string
           created_at?: string
+          distancia_km?: number | null
           endereco_entrega?: string
           forma_pagamento?: Database["public"]["Enums"]["forma_pagamento"]
           id?: string
+          localizacao_entrega?: string | null
           observacoes?: string | null
           padaria_id?: string
           status_pedido?: Database["public"]["Enums"]["status_pedido"]
+          taxa_servico_total?: number | null
           updated_at?: string
           valor_total?: number
         }

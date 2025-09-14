@@ -16,6 +16,8 @@ interface OrderRequest {
   endereco_entrega: string;
   forma_pagamento: 'dinheiro' | 'cartao' | 'mbway';
   observacoes?: string;
+  taxa_servico_total?: number;
+  localizacao_entrega?: string;
 }
 
 serve(async (req) => {
@@ -113,6 +115,7 @@ serve(async (req) => {
 
     // Validate each product and calculate total
     let valorTotal = 0;
+    let totalQuantidade = 0;
     const validatedProducts = [];
 
     for (const orderProduct of orderData.produtos) {
@@ -161,6 +164,7 @@ serve(async (req) => {
 
       const subtotal = orderProduct.quantidade * orderProduct.preco_unitario;
       valorTotal += subtotal;
+      totalQuantidade += orderProduct.quantidade;
 
       validatedProducts.push({
         produto_id: orderProduct.id,
@@ -169,6 +173,21 @@ serve(async (req) => {
         subtotal: subtotal,
         padaria_id: product.padaria_id
       });
+    }
+
+    // Validate service fee (simple validation based on quantity - could be enhanced with distance)
+    const expectedMinServiceFee = totalQuantidade * 2; // Minimum 2 MZN per item
+    const expectedMaxServiceFee = totalQuantidade * 6; // Maximum 6 MZN per item
+    const providedServiceFee = orderData.taxa_servico_total || 0;
+
+    if (providedServiceFee < 0 || providedServiceFee > expectedMaxServiceFee) {
+      return new Response(
+        JSON.stringify({ error: `Invalid service fee: ${providedServiceFee}. Expected between ${expectedMinServiceFee} and ${expectedMaxServiceFee} MZN` }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
 
     // Validate business hours (server-side time check)
@@ -185,6 +204,8 @@ serve(async (req) => {
         cliente_id: profile.id,
         padaria_id: validatedProducts[0].padaria_id, // Assuming single bakery per order
         valor_total: valorTotal,
+        taxa_servico_total: providedServiceFee,
+        localizacao_entrega: orderData.localizacao_entrega,
         forma_pagamento: orderData.forma_pagamento,
         status_pedido: status,
         endereco_entrega: orderData.endereco_entrega,
@@ -247,6 +268,9 @@ serve(async (req) => {
         success: true, 
         order_id: order.id,
         status: status,
+        valor_produtos: valorTotal,
+        taxa_servico: providedServiceFee,
+        valor_total_final: valorTotal + providedServiceFee,
         message: isValidOrderTime 
           ? 'Order placed successfully and will be processed immediately'
           : 'Order placed successfully and will be processed during business hours'
