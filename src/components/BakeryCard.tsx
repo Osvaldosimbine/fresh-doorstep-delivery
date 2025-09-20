@@ -31,10 +31,12 @@ const BakeryCard = ({ padaria, onAddToCart, getItemQuantity }: BakeryCardProps) 
       <CardHeader>
         <CardTitle className="text-bread-crust">{padaria.nome_padaria}</CardTitle>
         <CardDescription className="space-y-1">
-          <Badge variant="outline" className="border-bread-golden text-bread-crust">
-            {padaria.localizacao}
-          </Badge>
-          <p className="text-muted-foreground text-sm">{padaria.endereco}</p>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="border-bread-golden text-bread-crust">
+              {padaria.localizacao}
+            </Badge>
+          </div>
+          <div className="text-muted-foreground text-sm">{padaria.endereco}</div>
         </CardDescription>
       </CardHeader>
       <CardContent>

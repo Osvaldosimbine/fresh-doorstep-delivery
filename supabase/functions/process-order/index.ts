@@ -27,21 +27,38 @@ serve(async (req) => {
   }
 
   try {
+    // Get the authorization header
+    const authHeader = req.headers.get('Authorization');
+    console.log('Authorization header present:', !!authHeader);
+    
+    if (!authHeader) {
+      console.error('No authorization header provided');
+      return new Response(
+        JSON.stringify({ error: 'Authorization header required' }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: authHeader },
         },
       }
     );
 
-    // Get authenticated user
+    // Get authenticated user with better error handling
     const {
       data: { user },
       error: authError,
     } = await supabaseClient.auth.getUser();
+
+    console.log('User from auth:', user?.id, 'Auth error:', authError?.message);
 
     if (authError || !user) {
       console.error('Authentication failed:', authError);
@@ -209,7 +226,8 @@ serve(async (req) => {
         forma_pagamento: orderData.forma_pagamento,
         status_pedido: status,
         endereco_entrega: orderData.endereco_entrega,
-        observacoes: orderData.observacoes || null
+        observacoes: orderData.observacoes || null,
+        distancia_km: 5.0 // Default distance, could be calculated from coordinates
       })
       .select()
       .single();
@@ -248,17 +266,36 @@ serve(async (req) => {
       );
     }
 
-    // Update stock for each product
+    // Update stock for each product (direct update)
     for (const item of validatedProducts) {
-      await supabaseClient
-        .from('produtos')
-        .update({ 
-          estoque_atual: supabaseClient.rpc('decrement_stock', {
-            product_id: item.produto_id,
-            quantity: item.quantidade
-          })
-        })
-        .eq('id', item.produto_id);
+      try {
+        // Get current stock first
+        const { data: currentProduct, error: fetchError } = await supabaseClient
+          .from('produtos')
+          .select('estoque_atual')
+          .eq('id', item.produto_id)
+          .single();
+
+        if (fetchError || !currentProduct) {
+          console.error('Error fetching current stock:', fetchError);
+          continue;
+        }
+
+        const newStock = Math.max(0, currentProduct.estoque_atual - item.quantidade);
+
+        const { error: stockError } = await supabaseClient
+          .from('produtos')
+          .update({ estoque_atual: newStock })
+          .eq('id', item.produto_id);
+          
+        if (stockError) {
+          console.error('Error updating stock for product:', item.produto_id, stockError);
+        } else {
+          console.log(`Updated stock for product ${item.produto_id}: ${currentProduct.estoque_atual} -> ${newStock}`);
+        }
+      } catch (error) {
+        console.error('Error in stock update process:', error);
+      }
     }
 
     console.log(`Order ${order.id} created successfully for user ${user.id}`);

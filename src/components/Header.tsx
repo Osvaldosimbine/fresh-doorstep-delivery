@@ -12,6 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import MobileNavigation from "./MobileNavigation";
 
 const Header = () => {
   const { user, signOut } = useAuth();
@@ -63,6 +64,9 @@ const Header = () => {
           </Link>
           <Link to="/products" className="text-sm font-medium hover:text-primary transition-colors">
             Produtos
+          </Link>
+          <Link to="/pedidos" className="text-sm font-medium hover:text-primary transition-colors">
+            Pedidos
           </Link>
           <Link to="/register" className="text-sm font-medium hover:text-primary transition-colors">
             Registro
@@ -119,9 +123,7 @@ const Header = () => {
             </Link>
           )}
 
-          <Button variant="ghost" size="icon" className="md:hidden">
-            <Menu className="h-5 w-5" />
-          </Button>
+          <MobileNavigation />
         </div>
       </div>
     </header>

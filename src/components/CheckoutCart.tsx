@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ import { getLocationCoordinates, getServiceFeeTier } from "@/lib/serviceFee";
 const CheckoutCart = () => {
   const { state, removeItem, updateQuantity, updateServiceFees, clearCart } = useCart();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [selectedLocation, setSelectedLocation] = useState("");
   const [complement, setComplement] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
@@ -73,9 +75,23 @@ const CheckoutCart = () => {
         localizacao_entrega: selectedLocation
       };
 
-      // Process order through secure Edge Function
+      // Process order through secure Edge Function with proper auth headers
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        toast({
+          title: "Sessão expirada",
+          description: "Por favor, faça login novamente.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('process-order', {
-        body: orderData
+        body: orderData,
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       });
 
       if (error) throw error;
@@ -86,6 +102,11 @@ const CheckoutCart = () => {
           description: data.message || "Você receberá uma confirmação em breve.",
         });
         clearCart();
+        
+        // Navigate to order confirmation page or orders list
+        setTimeout(() => {
+          navigate('/pedidos');
+        }, 2000);
       } else {
         throw new Error(data?.error || 'Unknown error occurred');
       }
