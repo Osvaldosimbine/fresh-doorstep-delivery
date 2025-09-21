@@ -122,69 +122,6 @@
     @apply bg-background text-foreground;
   }
 
-  /* Bakery Window Grid Layout */
-  .bakery-window-grid {
-    display: grid;
-    grid-template-columns: repeat(12, 1fr);
-    grid-template-rows: repeat(8, minmax(120px, auto));
-    gap: 1.5rem;
-    max-width: 1400px;
-    margin: 0 auto;
-  }
-
-  .bakery-card-small {
-    grid-column: span 3;
-    grid-row: span 2;
-  }
-
-  .bakery-card-medium {
-    grid-column: span 4;
-    grid-row: span 3;
-  }
-
-  .bakery-card-large {
-    grid-column: span 5;
-    grid-row: span 4;
-  }
-
-  /* Responsive Grid Adjustments */
-  @media (max-width: 1024px) {
-    .bakery-window-grid {
-      grid-template-columns: repeat(8, 1fr);
-      grid-template-rows: repeat(12, minmax(100px, auto));
-    }
-    
-    .bakery-card-small {
-      grid-column: span 4;
-      grid-row: span 2;
-    }
-
-    .bakery-card-medium {
-      grid-column: span 4;
-      grid-row: span 3;
-    }
-
-    .bakery-card-large {
-      grid-column: span 8;
-      grid-row: span 4;
-    }
-  }
-
-  @media (max-width: 768px) {
-    .bakery-window-grid {
-      grid-template-columns: repeat(4, 1fr);
-      grid-template-rows: repeat(16, minmax(80px, auto));
-      gap: 1rem;
-    }
-    
-    .bakery-card-small,
-    .bakery-card-medium,
-    .bakery-card-large {
-      grid-column: span 4;
-      grid-row: span 3;
-    }
-  }
-
   /* Utility classes for text truncation */
   .line-clamp-1 {
     display: -webkit-box;
