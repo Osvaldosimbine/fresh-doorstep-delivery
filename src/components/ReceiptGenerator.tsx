@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { QrCode, Download, Share } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import jsPDF from 'jspdf';
 
 interface ReceiptGeneratorProps {
   orderData: {
@@ -20,49 +21,78 @@ const ReceiptGenerator = ({ orderData }: ReceiptGeneratorProps) => {
   const { id, produto, quantity, location, total, discountInfo, timestamp } = orderData;
 
   const handleDownload = () => {
-    // Create receipt content
-    const receiptContent = `
-RECIBO DE ENCOMENDA
-====================
-
-Código: ${id}
-Data: ${timestamp.toLocaleString('pt-MZ')}
-
-PRODUTO
-${produto.nome_produto}
-${produto.tipo_pao}
-Padaria: ${produto.padarias.nome_padaria}
-
-QUANTIDADE: ${quantity} ${quantity === 1 ? 'pão' : 'pães'}
-
-PREÇOS
-${discountInfo.discountAmount > 0 ? 
-  `Preço original: ${produto.preco.toFixed(2)} MT cada
-Desconto aplicado: -${discountInfo.discountAmount.toFixed(2)} MT cada
-Preço final: ${discountInfo.discountedPrice.toFixed(2)} MT cada
-Economia total: ${discountInfo.totalSavings.toFixed(2)} MT` :
-  `Preço: ${produto.preco.toFixed(2)} MT cada`
-}
-
-ENTREGA
-${location.address}
-
-TOTAL: ${total.toFixed(2)} MT
-
-====================
-Pão Delivery Maputo
-`;
-
-    // Create and download file
-    const blob = new Blob([receiptContent], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `recibo-${id}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    // Create PDF receipt
+    const doc = new jsPDF();
+    
+    // Header
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('BREAD EASY', 105, 20, { align: 'center' });
+    
+    doc.setFontSize(16);
+    doc.text('RECIBO DE ENCOMENDA', 105, 35, { align: 'center' });
+    
+    // Order details
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    
+    let yPosition = 55;
+    doc.text(`Código: ${id}`, 20, yPosition);
+    yPosition += 10;
+    doc.text(`Data: ${timestamp.toLocaleString('pt-MZ')}`, 20, yPosition);
+    
+    yPosition += 20;
+    doc.setFont('helvetica', 'bold');
+    doc.text('PRODUTO', 20, yPosition);
+    doc.setFont('helvetica', 'normal');
+    yPosition += 10;
+    doc.text(`${produto.nome_produto}`, 20, yPosition);
+    yPosition += 8;
+    doc.text(`${produto.tipo_pao}`, 20, yPosition);
+    yPosition += 8;
+    doc.text(`Padaria: ${produto.padarias.nome_padaria}`, 20, yPosition);
+    
+    yPosition += 20;
+    doc.text(`QUANTIDADE: ${quantity} ${quantity === 1 ? 'pão' : 'pães'}`, 20, yPosition);
+    
+    yPosition += 20;
+    doc.setFont('helvetica', 'bold');
+    doc.text('PREÇOS', 20, yPosition);
+    doc.setFont('helvetica', 'normal');
+    yPosition += 10;
+    
+    if (discountInfo.discountAmount > 0) {
+      doc.text(`Preço original: ${produto.preco.toFixed(2)} MT cada`, 20, yPosition);
+      yPosition += 8;
+      doc.text(`Desconto aplicado: -${discountInfo.discountAmount.toFixed(2)} MT cada`, 20, yPosition);
+      yPosition += 8;
+      doc.text(`Preço final: ${discountInfo.discountedPrice.toFixed(2)} MT cada`, 20, yPosition);
+      yPosition += 8;
+      doc.text(`Economia total: ${discountInfo.totalSavings.toFixed(2)} MT`, 20, yPosition);
+    } else {
+      doc.text(`Preço: ${produto.preco.toFixed(2)} MT cada`, 20, yPosition);
+    }
+    
+    yPosition += 20;
+    doc.setFont('helvetica', 'bold');
+    doc.text('ENTREGA', 20, yPosition);
+    doc.setFont('helvetica', 'normal');
+    yPosition += 10;
+    doc.text(`${location.address}`, 20, yPosition);
+    
+    yPosition += 20;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text(`TOTAL: ${total.toFixed(2)} MT`, 20, yPosition);
+    
+    // Footer
+    yPosition += 30;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Bread Easy - Pão fresco na sua porta', 105, yPosition, { align: 'center' });
+    
+    // Save PDF
+    doc.save(`recibo-${id}.pdf`);
   };
 
   const handleShare = async () => {

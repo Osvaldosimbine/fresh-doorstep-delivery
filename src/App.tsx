@@ -10,7 +10,9 @@ import Products from "./pages/Products";
 import HowItWorksPage from "./pages/HowItWorks";
 import Register from "./pages/Register";
 import Cart from "./pages/Cart";
-import Pedidos from "./pages/Pedidos";
+import PedidosHistorico from "./pages/PedidosHistorico";
+import FazerPedido from "./pages/FazerPedido";
+import OrderTracking from "./pages/OrderTracking";
 import Admin from "./pages/Admin";
 import ProductDetail from "./pages/ProductDetail";
 import OrderConfirmation from "./pages/OrderConfirmation";
@@ -34,7 +36,9 @@ const App = () => (
               <Route path="/cart" element={<Cart />} />
               <Route path="/product/:id" element={<ProductDetail />} />
               <Route path="/order-confirmation" element={<OrderConfirmation />} />
-              <Route path="/pedidos" element={<Pedidos />} />
+              <Route path="/pedidos" element={<PedidosHistorico />} />
+              <Route path="/fazer-pedido" element={<FazerPedido />} />
+              <Route path="/order-tracking" element={<OrderTracking />} />
               <Route path="/admin" element={<Admin />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

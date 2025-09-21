@@ -13,6 +13,7 @@ import { MAPUTO_LOCATIONS } from "@/constants/locations";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { getLocationCoordinates, getServiceFeeTier } from "@/lib/serviceFee";
+import PaymentConfirmationDialog from "./PaymentConfirmationDialog";
 
 const CheckoutCart = () => {
   const { state, removeItem, updateQuantity, updateServiceFees, clearCart } = useCart();
@@ -22,6 +23,7 @@ const CheckoutCart = () => {
   const [complement, setComplement] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
 
   // Update service fees when location changes
   useEffect(() => {
@@ -57,6 +59,18 @@ const CheckoutCart = () => {
       });
       return;
     }
+
+    // Show payment confirmation dialog for mobile money
+    if (["mpesa", "emola"].includes(paymentMethod)) {
+      setShowPaymentDialog(true);
+      return;
+    }
+
+    // For other payment methods, process directly
+    await processOrder();
+  };
+
+  const processOrder = async () => {
 
     setIsSubmitting(true);
 
@@ -105,7 +119,18 @@ const CheckoutCart = () => {
         
         // Navigate to order confirmation page or orders list
         setTimeout(() => {
-          navigate('/pedidos');
+          navigate('/order-confirmation', {
+            state: {
+              orderData: {
+                id: data.order_id,
+                produtos: state.items,
+                total: state.total,
+                endereco_entrega: `${selectedLocation}${complement ? `, ${complement}` : ''}`,
+                forma_pagamento: paymentMethod,
+                timestamp: new Date()
+              }
+            }
+          });
         }, 2000);
       } else {
         throw new Error(data?.error || 'Unknown error occurred');
@@ -325,6 +350,17 @@ const CheckoutCart = () => {
       >
         {isSubmitting ? "Enviando..." : `Finalizar Pedido - ${state.total.toFixed(2)} MT`}
       </Button>
+      
+      <PaymentConfirmationDialog
+        isOpen={showPaymentDialog}
+        onClose={() => setShowPaymentDialog(false)}
+        onConfirm={() => {
+          setShowPaymentDialog(false);
+          processOrder();
+        }}
+        paymentMethod={paymentMethod}
+        amount={state.total}
+      />
     </div>
   );
 };

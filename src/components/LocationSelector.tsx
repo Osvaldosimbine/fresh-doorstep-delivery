@@ -53,26 +53,36 @@ const LocationSelector = ({ onLocationSelected, onClose }: LocationSelectorProps
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        onLocationSelected({
-          address: `Localização atual (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`,
-          coordinates: { lat: latitude, lng: longitude }
-        });
-        setIsGettingLocation(false);
-      },
-      (error) => {
-        console.error("Erro ao obter localização:", error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível obter sua localização atual",
-          variant: "destructive",
-        });
-        setIsGettingLocation(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
-    );
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            onLocationSelected({
+              address: `Localização atual (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`,
+              coordinates: { lat: latitude, lng: longitude }
+            });
+            setIsGettingLocation(false);
+          },
+          (error) => {
+            console.error("Erro ao obter localização:", error);
+            let errorMessage = "Não foi possível obter sua localização atual";
+            
+            if (error.code === error.PERMISSION_DENIED) {
+              errorMessage = "Permissão de localização negada. Por favor, permita o acesso à localização.";
+            } else if (error.code === error.POSITION_UNAVAILABLE) {
+              errorMessage = "Localização não disponível. Tente novamente.";
+            } else if (error.code === error.TIMEOUT) {
+              errorMessage = "Tempo limite excedido. Tente novamente.";
+            }
+            
+            toast({
+              title: "Erro",
+              description: errorMessage,
+              variant: "destructive",
+            });
+            setIsGettingLocation(false);
+          },
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 300000 }
+        );
   };
 
   const handleCustomAddress = () => {
