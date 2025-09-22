@@ -126,7 +126,7 @@ const ProductGrid = () => {
         </div>
 
         <div className="text-center mt-12">
-          <Link to="/pedidos">
+          <Link to="/fazer-pedido">
             <Button size="lg" className="mb-4">
               Ver Todos os Produtos
             </Button>

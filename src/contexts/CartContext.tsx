@@ -120,12 +120,11 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       const newItems = state.items.map(item => {
         const serviceFeeInfo = calculateServiceFee(
           action.payload.userLocation, 
-          DEFAULT_BAKERY_LOCATION, 
-          item.quantidade
+          DEFAULT_BAKERY_LOCATION
         );
         return {
           ...item,
-          taxa_servico_unitaria: serviceFeeInfo.feePerUnit,
+          taxa_servico_unitaria: serviceFeeInfo.totalFee / state.items.length, // Distribute fixed fee among items
           taxa_servico_total: serviceFeeInfo.totalFee,
           distancia_km: serviceFeeInfo.distanceKm
         };

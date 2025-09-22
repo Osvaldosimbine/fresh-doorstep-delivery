@@ -2,8 +2,8 @@
 
 export interface ServiceFeeInfo {
   distanceKm: number;
-  feePerUnit: number;
   totalFee: number;
+  zone: string;
 }
 
 export interface Location {
@@ -17,13 +17,11 @@ export const DEFAULT_BAKERY_LOCATION: Location = {
   lng: 32.5732
 };
 
-// Service fee tiers based on distance
+// Service fee tiers based on distance (fixed rates per delivery)
 const SERVICE_FEE_TIERS = [
-  { maxDistance: 5, feePerUnit: 2 },    // 0-5km: 2 MZN per bread
-  { maxDistance: 10, feePerUnit: 3 },   // 5-10km: 3 MZN per bread
-  { maxDistance: 15, feePerUnit: 4 },   // 10-15km: 4 MZN per bread
-  { maxDistance: 20, feePerUnit: 5 },   // 15-20km: 5 MZN per bread
-  { maxDistance: Infinity, feePerUnit: 6 } // 20km+: 6 MZN per bread
+  { maxDistance: 3, fee: 25 },    // 0-3km: 25 MT fixed
+  { maxDistance: 7, fee: 35 },    // 3-7km: 35 MT fixed  
+  { maxDistance: Infinity, fee: 45 } // 7km+: 45 MT fixed
 ];
 
 /**
@@ -42,23 +40,26 @@ export const calculateDistance = (point1: Location, point2: Location): number =>
 };
 
 /**
- * Calculate service fee based on distance and quantity
+ * Calculate service fee based on distance (fixed rate per delivery)
  */
 export const calculateServiceFee = (
   userLocation: Location, 
-  bakeryLocation: Location = DEFAULT_BAKERY_LOCATION, 
-  quantity: number
+  bakeryLocation: Location = DEFAULT_BAKERY_LOCATION
 ): ServiceFeeInfo => {
   const distance = calculateDistance(userLocation, bakeryLocation);
   
   // Find appropriate fee tier
   const tier = SERVICE_FEE_TIERS.find(tier => distance <= tier.maxDistance);
-  const feePerUnit = tier?.feePerUnit || 6; // Default to highest fee
+  const totalFee = tier?.fee || 45; // Default to highest fee
+  
+  let zone = "Zona Longa";
+  if (distance <= 3) zone = "Zona Curta";
+  else if (distance <= 7) zone = "Zona Média";
   
   return {
     distanceKm: Math.round(distance * 10) / 10, // Round to 1 decimal
-    feePerUnit,
-    totalFee: feePerUnit * quantity
+    totalFee,
+    zone
   };
 };
 
@@ -66,16 +67,12 @@ export const calculateServiceFee = (
  * Get service fee tier description
  */
 export const getServiceFeeTier = (distanceKm: number): string => {
-  if (distanceKm <= 5) {
-    return "0-5km - Taxa de 2 MZN por pão";
-  } else if (distanceKm <= 10) {
-    return "5-10km - Taxa de 3 MZN por pão";
-  } else if (distanceKm <= 15) {
-    return "10-15km - Taxa de 4 MZN por pão";
-  } else if (distanceKm <= 20) {
-    return "15-20km - Taxa de 5 MZN por pão";
+  if (distanceKm <= 3) {
+    return "0-3km - Taxa de 25 MT por entrega";
+  } else if (distanceKm <= 7) {
+    return "3-7km - Taxa de 35 MT por entrega";
   }
-  return "20km+ - Taxa de 6 MZN por pão";
+  return "7km+ - Taxa de 45 MT por entrega";
 };
 
 /**

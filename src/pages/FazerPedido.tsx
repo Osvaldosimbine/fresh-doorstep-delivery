@@ -34,7 +34,14 @@ const FazerPedido = () => {
     if (currentQuantity > 0) {
       updateQuantity(produto.id, currentQuantity + 1);
     } else {
-      addItem(produto, 1);
+      const cartItem = {
+        id: produto.id,
+        nome_produto: produto.nome_produto,
+        preco: produto.preco,
+        quantidade: 1,
+        padaria: padaria.nome_padaria
+      };
+      addItem(cartItem);
     }
     
     toast({
