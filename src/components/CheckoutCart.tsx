@@ -13,7 +13,7 @@ import { MAPUTO_LOCATIONS } from "@/constants/locations";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { getLocationCoordinates, getServiceFeeTier } from "@/lib/serviceFee";
-import { isOrderTimeAllowed, getCurrentTimeSlot } from "@/lib/timeUtils";
+import { isOrderTimeAllowed, getCurrentTimeSlot, ORDER_TIME_SLOTS } from "@/lib/timeUtils";
 import PaymentConfirmationDialog from "./PaymentConfirmationDialog";
 import OrderScheduler from "./OrderScheduler";
 
@@ -28,6 +28,7 @@ const CheckoutCart = () => {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [showScheduler, setShowScheduler] = useState(false);
   const [scheduledTime, setScheduledTime] = useState<string>("");
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>("");
 
   // Update service fees when location changes
   useEffect(() => {
@@ -79,10 +80,10 @@ const CheckoutCart = () => {
   };
 
   const handleFinalizePedido = async () => {
-    if (!selectedLocation || !paymentMethod) {
+    if (!selectedLocation || !paymentMethod || !selectedTimeSlot) {
       toast({
         title: "Informações incompletas",
-        description: "Por favor, selecione a localização e forma de pagamento.",
+        description: "Por favor, selecione a localização, horário de entrega e forma de pagamento.",
         variant: "destructive",
       });
       return;
@@ -266,23 +267,28 @@ const CheckoutCart = () => {
           {/* Detailed Breakdown */}
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Subtotal (produtos):</span>
-              <span>{(state.total - state.totalServiceFee).toFixed(2)} MT</span>
+              <span className="text-muted-foreground">Custo dos pães:</span>
+              <span>{(state.total - state.totalServiceFee - (state.items.reduce((sum, item) => sum + item.quantidade, 0) * 3)).toFixed(2)} MT</span>
+            </div>
+            
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Taxa de serviço (3 MT/pão):</span>
+              <span>+{(state.items.reduce((sum, item) => sum + item.quantidade, 0) * 3).toFixed(2)} MT</span>
             </div>
             
             {state.totalSavings > 0 && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
                 <div className="flex items-center gap-2 text-green-700">
                   <TrendingDown className="h-4 w-4" />
-                  <span className="font-semibold text-sm">Desconto por Quantidade Aplicado!</span>
+                  <span className="font-semibold text-sm">Desconto por Volume (50+ pães)</span>
                 </div>
                 <div className="space-y-1">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Subtotal original:</span>
+                    <span className="text-muted-foreground">Preço original:</span>
                     <span className="line-through">{state.originalTotal.toFixed(2)} MT</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-green-600 font-medium">Economia total:</span>
+                    <span className="text-green-600 font-medium">Desconto aplicado:</span>
                     <span className="text-green-600 font-semibold">-{state.totalSavings.toFixed(2)} MT</span>
                   </div>
                 </div>
@@ -290,17 +296,17 @@ const CheckoutCart = () => {
             )}
             
             {state.totalServiceFee > 0 && selectedLocation && (
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 space-y-2">
-                <div className="flex items-center gap-2 text-orange-700">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
+                <div className="flex items-center gap-2 text-blue-700">
                   <Truck className="h-4 w-4" />
-                  <span className="font-semibold text-sm">Taxa de Entrega</span>
+                  <span className="font-semibold text-sm">Taxa de Mobilidade</span>
                 </div>
                 <div className="space-y-1">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">
                       {state.items[0]?.distancia_km && getServiceFeeTier(state.items[0].distancia_km)}
                     </span>
-                    <span className="text-orange-600 font-semibold">+{state.totalServiceFee.toFixed(2)} MT</span>
+                    <span className="text-blue-600 font-semibold">+{state.totalServiceFee.toFixed(2)} MT</span>
                   </div>
                 </div>
               </div>
@@ -349,6 +355,41 @@ const CheckoutCart = () => {
               placeholder="Ex: Rua da Paz, 123, Apt 4B"
             />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-bread-crust">
+            <Clock className="h-5 w-5" />
+            Horário de Entrega
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="time-slot">Selecione o horário desejado</Label>
+            <Select value={selectedTimeSlot} onValueChange={setSelectedTimeSlot}>
+              <SelectTrigger>
+                <SelectValue placeholder="Escolha um horário" />
+              </SelectTrigger>
+              <SelectContent>
+                {ORDER_TIME_SLOTS.map((slot) => (
+                  <SelectItem key={slot.start} value={slot.label}>
+                    {slot.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {!isOrderTimeAllowed() && (
+            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-800">
+                <Clock className="inline h-4 w-4 mr-1" />
+                Pedidos fora do horário serão agendados para o próximo horário disponível
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 

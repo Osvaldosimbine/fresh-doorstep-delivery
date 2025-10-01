@@ -17,11 +17,11 @@ export const DEFAULT_BAKERY_LOCATION: Location = {
   lng: 32.5732
 };
 
-// Service fee tiers based on distance (fixed rates per delivery)
+// Service fee tiers based on distance (fixed rates per delivery - Taxa de Mobilidade)
 const SERVICE_FEE_TIERS = [
-  { maxDistance: 3, fee: 25 },    // 0-3km: 25 MT fixed
-  { maxDistance: 7, fee: 35 },    // 3-7km: 35 MT fixed  
-  { maxDistance: Infinity, fee: 45 } // 7km+: 45 MT fixed
+  { maxDistance: 3, fee: 5 },    // 0-3km: 5 MT fixed
+  { maxDistance: 7, fee: 10 },    // 3-7km: 10 MT fixed  
+  { maxDistance: Infinity, fee: 15 } // 7km+: 15 MT fixed
 ];
 
 /**
@@ -50,7 +50,7 @@ export const calculateServiceFee = (
   
   // Find appropriate fee tier
   const tier = SERVICE_FEE_TIERS.find(tier => distance <= tier.maxDistance);
-  const totalFee = tier?.fee || 45; // Default to highest fee
+  const totalFee = tier?.fee || 15; // Default to highest fee
   
   let zone = "Zona Longa";
   if (distance <= 3) zone = "Zona Curta";
@@ -68,11 +68,11 @@ export const calculateServiceFee = (
  */
 export const getServiceFeeTier = (distanceKm: number): string => {
   if (distanceKm <= 3) {
-    return "0-3km - Taxa de 25 MT por entrega";
+    return "0-3km - Taxa de 5 MT por entrega";
   } else if (distanceKm <= 7) {
-    return "3-7km - Taxa de 35 MT por entrega";
+    return "3-7km - Taxa de 10 MT por entrega";
   }
-  return "7km+ - Taxa de 45 MT por entrega";
+  return "7km+ - Taxa de 15 MT por entrega";
 };
 
 /**
