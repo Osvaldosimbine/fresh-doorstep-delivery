@@ -26,10 +26,12 @@ function isValidEmail(email: string): boolean {
   return emailRegex.test(email);
 }
 
-// Validate phone number (basic Mozambique format)
+// Validate phone number (flexible Mozambique format)
 function isValidPhone(phone: string): boolean {
-  const phoneRegex = /^\+?258[0-9]{9}$/;
-  return phoneRegex.test(phone.replace(/\s/g, ''));
+  const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
+  // Accept formats: 823456789, +258823456789, 258823456789, 8234-56789, etc.
+  const phoneRegex = /^(\+?258)?[8][0-9]{8}$/;
+  return phoneRegex.test(cleanPhone);
 }
 
 serve(async (req) => {

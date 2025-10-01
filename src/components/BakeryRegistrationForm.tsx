@@ -15,7 +15,9 @@ import { MAPUTO_LOCATIONS } from "@/constants/locations";
 const bakerySchema = z.object({
   nome_padaria: z.string().min(2, "Nome da padaria deve ter pelo menos 2 caracteres"),
   endereco: z.string().min(5, "Endereço deve ter pelo menos 5 caracteres"),
-  telefone: z.string().min(9, "Telefone deve ter pelo menos 9 dígitos"),
+  telefone: z.string()
+    .min(9, "Telefone deve ter pelo menos 9 dígitos")
+    .regex(/^(\+?258)?[8][0-9]{8}$/, "Formato inválido. Ex: 843123456"),
   email: z.string().email("Email inválido"),
   localizacao: z.string().min(1, "Selecione uma localização"),
   horario_funcionamento: z.string().optional(),

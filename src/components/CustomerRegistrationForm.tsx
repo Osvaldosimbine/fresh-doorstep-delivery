@@ -29,7 +29,9 @@ import { MAPUTO_LOCATIONS } from "@/constants/locations";
 const customerRegistrationSchema = z.object({
   nome_completo: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   email: z.string().email("Email inválido"),
-  telefone: z.string().min(10, "Telefone deve ter pelo menos 10 dígitos"),
+  telefone: z.string()
+    .min(9, "Telefone deve ter pelo menos 9 dígitos")
+    .regex(/^(\+?258)?[8][0-9]{8}$/, "Formato inválido. Ex: 823456789"),
   localizacao: z.string().min(1, "Selecione uma localização"),
   endereco: z.string().min(10, "Endereço deve ter pelo menos 10 caracteres"),
 });

@@ -19,7 +19,9 @@ const registerSchema = z.object({
   nome_completo: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
   email: z.string().email('Email inválido'),
   password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
-  telefone: z.string().min(9, 'Telefone deve ter pelo menos 9 dígitos'),
+  telefone: z.string()
+    .min(9, 'Telefone deve ter pelo menos 9 dígitos')
+    .regex(/^(\+?258)?[8][0-9]{8}$/, 'Formato de telefone inválido. Ex: 823456789 ou +258823456789'),
   tipo_usuario: z.enum(['cliente', 'padaria', 'entregador']),
   localizacao: z.string().min(1, 'Localização é obrigatória'),
   endereco: z.string().min(5, 'Endereço deve ter pelo menos 5 caracteres'),
