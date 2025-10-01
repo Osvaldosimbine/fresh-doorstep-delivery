@@ -8,14 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Trash2, MapPin, CreditCard, TrendingDown, Truck, Clock } from "lucide-react";
+import { Trash2, MapPin, CreditCard, TrendingDown, Truck, Clock, Calendar } from "lucide-react";
 import { MAPUTO_LOCATIONS } from "@/constants/locations";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { getLocationCoordinates, getServiceFeeTier } from "@/lib/serviceFee";
-import { isOrderTimeAllowed, getCurrentTimeSlot, ORDER_TIME_SLOTS } from "@/lib/timeUtils";
+import { isOrderTimeAllowed, getNextAvailableTime, ORDER_TIME_SLOTS } from "@/lib/timeUtils";
 import PaymentConfirmationDialog from "./PaymentConfirmationDialog";
-import OrderScheduler from "./OrderScheduler";
 
 const CheckoutCart = () => {
   const { state, removeItem, updateQuantity, updateServiceFees, clearCart } = useCart();
@@ -26,8 +25,6 @@ const CheckoutCart = () => {
   const [paymentMethod, setPaymentMethod] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-  const [showScheduler, setShowScheduler] = useState(false);
-  const [scheduledTime, setScheduledTime] = useState<string>("");
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>("");
 
   // Update service fees when location changes
@@ -65,17 +62,6 @@ const CheckoutCart = () => {
       return;
     }
 
-    if (!isOrderTimeAllowed()) {
-      setShowScheduler(true);
-      return;
-    }
-
-    setShowPaymentDialog(true);
-  };
-
-  const handleScheduleConfirm = (timeSlot: string) => {
-    setScheduledTime(timeSlot);
-    setShowScheduler(false);
     setShowPaymentDialog(true);
   };
 
@@ -366,13 +352,22 @@ const CheckoutCart = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {!isOrderTimeAllowed() && (
+            <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <Calendar className="h-4 w-4 text-yellow-600" />
+              <p className="text-sm text-yellow-800">
+                <strong>Fora do horário de funcionamento.</strong> Seu pedido será agendado para: {getNextAvailableTime()}
+              </p>
+            </div>
+          )}
+          
           <div className="space-y-2">
             <Label htmlFor="time-slot">Selecione o horário desejado</Label>
             <Select value={selectedTimeSlot} onValueChange={setSelectedTimeSlot}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Escolha um horário" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-background z-50">
                 {ORDER_TIME_SLOTS.map((slot) => (
                   <SelectItem key={slot.start} value={slot.label}>
                     {slot.label}
@@ -382,14 +377,11 @@ const CheckoutCart = () => {
             </Select>
           </div>
           
-          {!isOrderTimeAllowed() && (
-            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-sm text-yellow-800">
-                <Clock className="inline h-4 w-4 mr-1" />
-                Pedidos fora do horário serão agendados para o próximo horário disponível
-              </p>
-            </div>
-          )}
+          <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+            <p className="text-xs text-blue-600">
+              Seu pedido ficará em espera até o horário selecionado
+            </p>
+          </div>
         </CardContent>
       </Card>
 
@@ -412,24 +404,6 @@ const CheckoutCart = () => {
         </CardContent>
       </Card>
 
-      {scheduledTime && (
-        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-blue-800 text-sm">
-            <Clock className="inline h-4 w-4 mr-1" />
-            Pedido agendado para: {scheduledTime}
-          </p>
-        </div>
-      )}
-
-      {!isOrderTimeAllowed() && !scheduledTime && (
-        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <p className="text-yellow-800 text-sm">
-            <Clock className="inline h-4 w-4 mr-1" />
-            Fora do horário de funcionamento. Clique em "Finalizar Pedido" para agendar.
-          </p>
-        </div>
-      )}
-
       <Button 
         className="w-full bg-bread-golden hover:bg-bread-crust"
         onClick={handleFinalizePedido}
@@ -448,15 +422,6 @@ const CheckoutCart = () => {
         paymentMethod={paymentMethod}
         amount={state.total}
       />
-
-      {showScheduler && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <OrderScheduler
-            onScheduleConfirm={handleScheduleConfirm}
-            onCancel={() => setShowScheduler(false)}
-          />
-        </div>
-      )}
     </div>
   );
 };
