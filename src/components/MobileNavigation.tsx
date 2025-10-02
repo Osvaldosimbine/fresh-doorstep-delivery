@@ -55,7 +55,7 @@ const MobileNavigation = () => {
     { to: "/", label: "Página Principal", icon: Home },
     { to: "/como-funciona", label: "Como Funciona", icon: Info },
     { to: "/products", label: "Produtos", icon: Package },
-    { to: "/pedidos", label: "Pedidos", icon: ShoppingBag },
+    ...(user ? [{ to: "/pedidos", label: "Pedidos", icon: ShoppingBag }] : []),
     { to: "/cart", label: "Carrinho", icon: ShoppingCart, badge: cartItemsCount },
   ];
 

@@ -65,9 +65,11 @@ const Header = () => {
           <Link to="/products" className="text-sm font-medium hover:text-primary transition-colors">
             Produtos
           </Link>
-          <Link to="/pedidos" className="text-sm font-medium hover:text-primary transition-colors">
-            Pedidos
-          </Link>
+          {user && (
+            <Link to="/pedidos" className="text-sm font-medium hover:text-primary transition-colors">
+              Pedidos
+            </Link>
+          )}
           <Link to="/register" className="text-sm font-medium hover:text-primary transition-colors">
             Registro
           </Link>

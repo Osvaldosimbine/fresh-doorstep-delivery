@@ -4,6 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { QrCode, Download, Share } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import jsPDF from 'jspdf';
+import breadIcon from "@/assets/bread-icon.jpg";
 
 interface ReceiptGeneratorProps {
   orderData: {
@@ -24,19 +25,24 @@ const ReceiptGenerator = ({ orderData }: ReceiptGeneratorProps) => {
     // Create PDF receipt
     const doc = new jsPDF();
     
+    // Add logo/icon
+    const img = new Image();
+    img.src = breadIcon;
+    doc.addImage(img, 'JPEG', 85, 10, 40, 40);
+    
     // Header
     doc.setFontSize(20);
     doc.setFont('helvetica', 'bold');
-    doc.text('BREAD EASY', 105, 20, { align: 'center' });
+    doc.text('BREAD EASY', 105, 60, { align: 'center' });
     
     doc.setFontSize(16);
-    doc.text('RECIBO DE ENCOMENDA', 105, 35, { align: 'center' });
+    doc.text('RECIBO DE ENCOMENDA', 105, 70, { align: 'center' });
     
     // Order details
     doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
     
-    let yPosition = 55;
+    let yPosition = 85;
     doc.text(`Código: ${id}`, 20, yPosition);
     yPosition += 10;
     doc.text(`Data: ${timestamp.toLocaleString('pt-MZ')}`, 20, yPosition);
@@ -119,7 +125,14 @@ const ReceiptGenerator = ({ orderData }: ReceiptGeneratorProps) => {
 
   return (
     <Card className="border-2 border-dashed border-bread-golden">
-      <CardHeader className="text-center">
+      <CardHeader className="text-center space-y-4">
+        <div className="flex justify-center">
+          <img 
+            src={breadIcon} 
+            alt="Bread Easy Logo" 
+            className="h-20 w-20 rounded-full object-cover"
+          />
+        </div>
         <CardTitle className="flex items-center justify-center gap-2">
           <QrCode className="h-5 w-5" />
           Recibo da Encomenda

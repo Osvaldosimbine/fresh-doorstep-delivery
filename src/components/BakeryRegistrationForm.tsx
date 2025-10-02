@@ -18,7 +18,13 @@ const bakerySchema = z.object({
   telefone: z.string()
     .min(9, "Telefone deve ter pelo menos 9 dígitos")
     .regex(/^(\+?258)?[8][0-9]{8}$/, "Formato inválido. Ex: 843123456"),
-  email: z.string().email("Email inválido"),
+  email: z.string()
+    .min(1, "Email é obrigatório")
+    .email("Email inválido")
+    .regex(
+      /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/,
+      "Formato de email inválido. Use: exemplo@dominio.com"
+    ),
   localizacao: z.string().min(1, "Selecione uma localização"),
   horario_funcionamento: z.string().optional(),
 });

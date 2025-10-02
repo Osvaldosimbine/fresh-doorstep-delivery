@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
 import heroBread from "@/assets/hero-bread.jpg";
-import CustomerRegistrationForm from "@/components/CustomerRegistrationForm";
+import UserTypeSelector from "@/components/UserTypeSelector";
 
 const Hero = () => {
   return (
@@ -33,16 +33,16 @@ const Hero = () => {
           
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up" style={{animationDelay: '0.4s'}}>
-            <CustomerRegistrationForm>
+            <UserTypeSelector>
               <Button size="lg" className="text-lg px-8 py-4 shadow-button-custom hover:scale-105 transition-transform">
                 Quero Experimentar
               </Button>
-            </CustomerRegistrationForm>
-            <CustomerRegistrationForm>
+            </UserTypeSelector>
+            <UserTypeSelector>
               <Button variant="outline" size="lg" className="text-lg px-8 py-4 bg-white/10 border-white/20 text-white hover:bg-white/20">
                 Cadastre-se
               </Button>
-            </CustomerRegistrationForm>
+            </UserTypeSelector>
           </div>
         </div>
       </div>

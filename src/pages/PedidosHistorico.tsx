@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,32 +8,81 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Clock, MapPin, CreditCard } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const PedidosHistorico = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
+    if (!user) {
+      toast({
+        title: "Autenticação necessária",
+        description: "Por favor, faça login para ver seus pedidos",
+        variant: "destructive",
+      });
+      navigate('/register');
+      return;
+    }
     fetchOrders();
-  }, []);
+  }, [user, navigate, toast]);
 
   const fetchOrders = async () => {
     try {
-      // Mock data for demonstration - replace with actual Supabase query
-      const mockOrders = [
-        {
-          id: "ORD-001",
-          created_at: new Date().toISOString(),
-          status_pedido: "entregue",
-          valor_total: 45.50,
-          endereco_entrega: "Polana, Maputo",
-          forma_pagamento: "mpesa"
-        }
-      ];
-      setOrders(mockOrders);
+      setLoading(true);
+      
+      // Buscar o perfil do usuário primeiro
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user?.id)
+        .single();
+
+      if (profileError) {
+        console.error("Erro ao buscar perfil:", profileError);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar seu perfil",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Buscar pedidos reais do banco de dados
+      const { data: pedidos, error: pedidosError } = await supabase
+        .from('pedidos')
+        .select(`
+          id,
+          created_at,
+          status_pedido,
+          valor_total,
+          endereco_entrega,
+          forma_pagamento
+        `)
+        .eq('cliente_id', profile.id)
+        .order('created_at', { ascending: false });
+
+      if (pedidosError) {
+        console.error("Erro ao buscar pedidos:", pedidosError);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar seus pedidos",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setOrders(pedidos || []);
     } catch (error) {
       console.error("Erro ao buscar pedidos:", error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao carregar seus pedidos",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
