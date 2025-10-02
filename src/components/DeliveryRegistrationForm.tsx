@@ -44,10 +44,11 @@ const deliveryRegistrationSchema = z.object({
 type DeliveryRegistrationData = z.infer<typeof deliveryRegistrationSchema>;
 
 interface DeliveryRegistrationFormProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
+  inline?: boolean;
 }
 
-const DeliveryRegistrationForm = ({ children }: DeliveryRegistrationFormProps) => {
+const DeliveryRegistrationForm = ({ children, inline = false }: DeliveryRegistrationFormProps) => {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -119,6 +120,69 @@ const DeliveryRegistrationForm = ({ children }: DeliveryRegistrationFormProps) =
     }
   };
 
+  const formContent = (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="nome_completo"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Nome Completo</FormLabel>
+              <FormControl>
+                <Input placeholder="Seu nome completo" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input type="email" placeholder="seu@email.com" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="telefone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Telefone</FormLabel>
+              <FormControl>
+                <Input placeholder="(11) 99999-9999" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <LocationSelect
+          control={form.control}
+          name="localizacao_atual"
+          label="Localização Atual"
+          placeholder="Selecione a área onde trabalha"
+        />
+        <Button 
+          type="submit" 
+          className="w-full" 
+          disabled={isLoading}
+        >
+          {isLoading ? "Cadastrando..." : "Cadastrar como Entregador"}
+        </Button>
+      </form>
+    </Form>
+  );
+
+  if (inline) {
+    return formContent;
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -131,62 +195,7 @@ const DeliveryRegistrationForm = ({ children }: DeliveryRegistrationFormProps) =
             Preencha os dados abaixo para se cadastrar como entregador
           </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="nome_completo"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome Completo</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Seu nome completo" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input type="email" placeholder="seu@email.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="telefone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Telefone</FormLabel>
-                  <FormControl>
-                    <Input placeholder="(11) 99999-9999" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <LocationSelect
-              control={form.control}
-              name="localizacao_atual"
-              label="Localização Atual"
-              placeholder="Selecione a área onde trabalha"
-            />
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={isLoading}
-            >
-              {isLoading ? "Cadastrando..." : "Cadastrar como Entregador"}
-            </Button>
-          </form>
-        </Form>
+        {formContent}
       </DialogContent>
     </Dialog>
   );

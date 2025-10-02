@@ -142,11 +142,7 @@ const UserTypeSelector = ({ children }: UserTypeSelectorProps) => {
             >
               ← Voltar
             </Button>
-            {selectedUserType && (
-              <selectedUserType.FormComponent>
-                <div className="hidden" />
-              </selectedUserType.FormComponent>
-            )}
+            {selectedUserType && <selectedUserType.FormComponent inline />}
           </div>
         )}
       </DialogContent>

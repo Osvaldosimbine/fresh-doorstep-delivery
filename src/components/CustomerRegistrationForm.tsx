@@ -45,10 +45,11 @@ const customerRegistrationSchema = z.object({
 type CustomerRegistrationData = z.infer<typeof customerRegistrationSchema>;
 
 interface CustomerRegistrationFormProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
+  inline?: boolean;
 }
 
-const CustomerRegistrationForm = ({ children }: CustomerRegistrationFormProps) => {
+const CustomerRegistrationForm = ({ children, inline = false }: CustomerRegistrationFormProps) => {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -121,6 +122,85 @@ const CustomerRegistrationForm = ({ children }: CustomerRegistrationFormProps) =
     }
   };
 
+  const formContent = (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="nome_completo"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Nome Completo</FormLabel>
+              <FormControl>
+                <Input placeholder="Seu nome completo" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input type="email" placeholder="seu@email.com" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="telefone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Telefone</FormLabel>
+              <FormControl>
+                <Input placeholder="(11) 99999-9999" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <LocationSelect
+          control={form.control}
+          name="localizacao"
+          label="Localização"
+          placeholder="Selecione a sua área"
+        />
+        <FormField
+          control={form.control}
+          name="endereco"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Endereço</FormLabel>
+              <FormControl>
+                <Textarea 
+                  placeholder="Rua, número, bairro, cidade"
+                  {...field} 
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button 
+          type="submit" 
+          className="w-full" 
+          disabled={isLoading}
+        >
+          {isLoading ? "Cadastrando..." : "Quero Experimentar"}
+        </Button>
+      </form>
+    </Form>
+  );
+
+  if (inline) {
+    return formContent;
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -133,78 +213,7 @@ const CustomerRegistrationForm = ({ children }: CustomerRegistrationFormProps) =
             Preencha os dados abaixo para começar a usar o Bread Easy
           </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="nome_completo"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome Completo</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Seu nome completo" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input type="email" placeholder="seu@email.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="telefone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Telefone</FormLabel>
-                  <FormControl>
-                    <Input placeholder="(11) 99999-9999" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <LocationSelect
-              control={form.control}
-              name="localizacao"
-              label="Localização"
-              placeholder="Selecione a sua área"
-            />
-            <FormField
-              control={form.control}
-              name="endereco"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Endereço</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Rua, número, bairro, cidade"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={isLoading}
-            >
-              {isLoading ? "Cadastrando..." : "Quero Experimentar"}
-            </Button>
-          </form>
-        </Form>
+        {formContent}
       </DialogContent>
     </Dialog>
   );

@@ -32,10 +32,11 @@ const bakerySchema = z.object({
 type BakeryFormData = z.infer<typeof bakerySchema>;
 
 interface BakeryRegistrationFormProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
+  inline?: boolean;
 }
 
-export default function BakeryRegistrationForm({ children }: BakeryRegistrationFormProps) {
+export default function BakeryRegistrationForm({ children, inline = false }: BakeryRegistrationFormProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -99,6 +100,131 @@ export default function BakeryRegistrationForm({ children }: BakeryRegistrationF
     }
   };
 
+  const formContent = (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <FormField
+          control={form.control}
+          name="nome_padaria"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Nome da Padaria *</FormLabel>
+              <FormControl>
+                <Input 
+                  placeholder="Ex: Padaria Central"
+                  {...field} 
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="endereco"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Endereço Completo *</FormLabel>
+              <FormControl>
+                <Textarea 
+                  placeholder="Rua, número, bairro, cidade"
+                  {...field} 
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <LocationSelect
+          control={form.control}
+          name="localizacao"
+          label="Localização *"
+          placeholder="Selecione a área da padaria"
+        />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="telefone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Telefone *</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="843123456"
+                    {...field} 
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email *</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="padaria@exemplo.com"
+                    type="email"
+                    {...field} 
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <FormField
+          control={form.control}
+          name="horario_funcionamento"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Horário de Funcionamento</FormLabel>
+              <FormControl>
+                <Input 
+                  placeholder="Ex: Segunda a Sábado: 6h às 18h"
+                  {...field} 
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="flex gap-3 pt-4">
+          {!inline && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+              className="flex-1"
+            >
+              Cancelar
+            </Button>
+          )}
+          <Button
+            type="submit"
+            disabled={loading}
+            className="flex-1 bg-gradient-primary hover:scale-105 transition-transform"
+          >
+            {loading ? "Cadastrando..." : "Cadastrar Padaria"}
+          </Button>
+        </div>
+      </form>
+    </Form>
+  );
+
+  if (inline) {
+    return formContent;
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -111,122 +237,7 @@ export default function BakeryRegistrationForm({ children }: BakeryRegistrationF
           </DialogTitle>
         </DialogHeader>
         
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="nome_padaria"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome da Padaria *</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="Ex: Padaria Central"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="endereco"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Endereço Completo *</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Rua, número, bairro, cidade"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <LocationSelect
-              control={form.control}
-              name="localizacao"
-              label="Localização *"
-              placeholder="Selecione a área da padaria"
-            />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="telefone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Telefone *</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="843123456"
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email *</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="padaria@exemplo.com"
-                        type="email"
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="horario_funcionamento"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Horário de Funcionamento</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="Ex: Segunda a Sábado: 6h às 18h"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="flex gap-3 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setOpen(false)}
-                className="flex-1"
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                disabled={loading}
-                className="flex-1 bg-gradient-primary hover:scale-105 transition-transform"
-              >
-                {loading ? "Cadastrando..." : "Cadastrar Padaria"}
-              </Button>
-            </div>
-          </form>
-        </Form>
+        {formContent}
       </DialogContent>
     </Dialog>
   );
