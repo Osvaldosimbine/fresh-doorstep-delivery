@@ -38,11 +38,6 @@ const Hero = () => {
                 Quero Experimentar
               </Button>
             </UserTypeSelector>
-            <UserTypeSelector>
-              <Button variant="outline" size="lg" className="text-lg px-8 py-4 bg-white/10 border-white/20 text-white hover:bg-white/20">
-                Cadastre-se
-              </Button>
-            </UserTypeSelector>
           </div>
         </div>
       </div>
