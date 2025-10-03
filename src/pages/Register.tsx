@@ -61,30 +61,38 @@ const Register = () => {
   const onRegister = async (data: RegisterFormData) => {
     setLoading(true);
     
-    const { error } = await signUp(data.email, data.password, {
-      nome_completo: data.nome_completo,
-      telefone: data.telefone,
-      tipo_usuario: data.tipo_usuario,
-      localizacao: data.localizacao,
-      endereco: data.endereco,
-      numero_documento: data.numero_documento,
-    });
+    try {
+      const { error } = await signUp(data.email, data.password, {
+        nome_completo: data.nome_completo,
+        telefone: data.telefone,
+        tipo_usuario: data.tipo_usuario,
+        localizacao: data.localizacao,
+        endereco: data.endereco,
+        numero_documento: data.numero_documento,
+      });
 
-    if (error) {
+      if (error) {
+        // Check for rate limit error
+        if (error.message.includes('over_email_send_rate_limit')) {
+          throw new Error('Você tentou cadastrar muitas vezes. Por favor, aguarde 60 segundos e tente novamente.');
+        }
+        throw error;
+      }
+
+      toast({
+        title: "Cadastro realizado com sucesso!",
+        description: "Verifique seu email para confirmar sua conta.",
+      });
+      setActiveTab('login');
+    } catch (error: any) {
       toast({
         title: "Erro no cadastro",
         description: error.message,
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "Cadastro realizado com sucesso!",
-        description: "Verifique seu email para confirmar sua conta.",
-      });
-      navigate('/');
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   const onLogin = async (data: LoginFormData) => {

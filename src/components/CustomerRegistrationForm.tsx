@@ -65,47 +65,40 @@ const CustomerRegistrationForm = ({ children, inline = false }: CustomerRegistra
     setIsLoading(true);
     
     try {
-      // First, sign up the user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      // Create a temporary password
+      const tempPassword = `Temp${Math.random().toString(36).slice(-8)}!`;
+      
+      // Sign up the user with Supabase Auth - metadata will trigger automatic profile creation
+      const { error: authError } = await supabase.auth.signUp({
         email: data.email,
-        password: Math.random().toString(36).slice(-8), // Generate temporary password
+        password: tempPassword,
         options: {
           data: {
-            full_name: data.nome_completo,
+            nome_completo: data.nome_completo,
+            telefone: data.telefone,
+            tipo_usuario: 'cliente',
+            localizacao: data.localizacao,
+            endereco: data.endereco,
           },
-        },
+          emailRedirectTo: `${window.location.origin}/`
+        }
       });
 
       if (authError) {
+        // Check for rate limit error
+        if (authError.message.includes('over_email_send_rate_limit')) {
+          throw new Error('Você tentou cadastrar muitas vezes. Por favor, aguarde 60 segundos e tente novamente.');
+        }
         throw authError;
       }
 
-      if (authData.user) {
-        // Create profile in usuarios table
-        const { error: profileError } = await supabase
-          .from("usuarios")
-          .insert({
-            user_id: authData.user.id,
-            nome_completo: data.nome_completo,
-            email: data.email,
-            telefone: data.telefone,
-            localizacao_atual: data.localizacao,
-            tipo_usuario: "cliente",
-            status_cadastro: "pendente",
-          });
+      toast({
+        title: "Cadastro realizado com sucesso!",
+        description: "Verifique seu email para confirmar o cadastro.",
+      });
 
-        if (profileError) {
-          throw profileError;
-        }
-
-        toast({
-          title: "Cadastro realizado com sucesso!",
-          description: "Bem-vindo ao Bread Easy! Você receberá um email com as próximas instruções.",
-        });
-
-        form.reset();
-        setOpen(false);
-      }
+      form.reset();
+      setOpen(false);
     } catch (error: any) {
       console.error("Erro ao cadastrar cliente:", error);
       toast({

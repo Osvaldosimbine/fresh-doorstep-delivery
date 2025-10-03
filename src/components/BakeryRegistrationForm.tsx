@@ -52,9 +52,37 @@ export default function BakeryRegistrationForm({ children, inline = false }: Bak
   const onSubmit = async (values: BakeryFormData) => {
     setLoading(true);
     try {
+      // Create a temporary password
+      const tempPassword = `Temp${Math.random().toString(36).slice(-8)}!`;
+      
+      // Sign up the user with Supabase Auth - metadata will trigger automatic profile creation
+      const { error: authError } = await supabase.auth.signUp({
+        email: values.email,
+        password: tempPassword,
+        options: {
+          data: {
+            nome_completo: values.nome_padaria,
+            telefone: values.telefone,
+            tipo_usuario: 'padaria',
+            localizacao: values.localizacao,
+            endereco: values.endereco,
+          },
+          emailRedirectTo: `${window.location.origin}/`
+        }
+      });
+
+      if (authError) {
+        // Check for rate limit error
+        if (authError.message.includes('over_email_send_rate_limit')) {
+          throw new Error('Você tentou cadastrar muitas vezes. Por favor, aguarde 60 segundos e tente novamente.');
+        }
+        throw authError;
+      }
+
+      // Now create the bakery record
       const location = MAPUTO_LOCATIONS.find(loc => loc.value === values.localizacao);
       
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("padarias")
         .insert([
           {
@@ -66,29 +94,21 @@ export default function BakeryRegistrationForm({ children, inline = false }: Bak
             horario_funcionamento: values.horario_funcionamento ? 
               { info: values.horario_funcionamento } : null,
           }
-        ])
-        .select();
+        ]);
 
-      if (error) {
-        console.error("Erro ao cadastrar padaria:", error);
-        toast({
-          title: "Erro ao cadastrar padaria",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Padaria cadastrada com sucesso!",
-          description: "Seu cadastro foi realizado e está sendo analisado.",
-        });
-        form.reset();
-        setOpen(false);
-      }
-    } catch (error) {
-      console.error("Erro inesperado:", error);
+      if (error) throw error;
+
       toast({
-        title: "Erro inesperado",
-        description: "Tente novamente mais tarde.",
+        title: "Padaria cadastrada com sucesso!",
+        description: "Verifique seu email para confirmar o cadastro.",
+      });
+      form.reset();
+      setOpen(false);
+    } catch (error: any) {
+      console.error("Erro ao cadastrar padaria:", error);
+      toast({
+        title: "Erro ao cadastrar padaria",
+        description: error.message,
         variant: "destructive",
       });
     } finally {
