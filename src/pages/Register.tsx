@@ -19,11 +19,7 @@ const registerSchema = z.object({
   nome_completo: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
   email: z.string()
     .min(1, 'Email é obrigatório')
-    .email('Email inválido')
-    .regex(
-      /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/,
-      'Formato de email inválido. Use: exemplo@dominio.com'
-    ),
+    .email('Email inválido'),
   password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
   telefone: z.string()
     .min(9, 'Telefone deve ter pelo menos 9 dígitos')
@@ -37,11 +33,7 @@ const registerSchema = z.object({
 const loginSchema = z.object({
   email: z.string()
     .min(1, 'Email é obrigatório')
-    .email('Email inválido')
-    .regex(
-      /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/,
-      'Formato de email inválido. Use: exemplo@dominio.com'
-    ),
+    .email('Email inválido'),
   password: z.string().min(1, 'Senha é obrigatória'),
 });
 

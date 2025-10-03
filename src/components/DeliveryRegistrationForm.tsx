@@ -30,11 +30,7 @@ const deliveryRegistrationSchema = z.object({
   nome_completo: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   email: z.string()
     .min(1, "Email é obrigatório")
-    .email("Email inválido")
-    .regex(
-      /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/,
-      "Formato de email inválido. Use: exemplo@dominio.com"
-    ),
+    .email("Email inválido"),
   telefone: z.string()
     .min(9, "Telefone deve ter pelo menos 9 dígitos")
     .regex(/^(\+?258)?[8][0-9]{8}$/, "Formato inválido. Ex: 823456789"),
