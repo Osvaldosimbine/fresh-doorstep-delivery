@@ -20,10 +20,14 @@ function sanitizeInput(input: string): string {
   return input.trim().replace(/[<>\"']/g, '');
 }
 
-// Validate email format
+// Validate email format - permissive validation to accept all valid emails
 function isValidEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
+  // Simple check: must have @ and at least one character on each side
+  // Let the email service provider handle the detailed validation
+  const parts = email.split('@');
+  if (parts.length !== 2) return false;
+  const [local, domain] = parts;
+  return local.length > 0 && domain.length > 0 && domain.includes('.');
 }
 
 // Validate phone number (flexible Mozambique format)
