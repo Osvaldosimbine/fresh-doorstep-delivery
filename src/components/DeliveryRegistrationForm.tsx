@@ -96,6 +96,9 @@ const DeliveryRegistrationForm = ({ children, inline = false }: DeliveryRegistra
 
       form.reset();
       setOpen(false);
+      
+      // Redirect to verification page
+      window.location.href = `/register?email=${encodeURIComponent(data.email)}&verify=true`;
     } catch (error: any) {
       console.error("Erro ao cadastrar entregador:", error);
       toast({

@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import LocationSelect from '@/components/LocationSelect';
+import { EmailVerificationNotice } from '@/components/EmailVerificationNotice';
 
 const registerSchema = z.object({
   nome_completo: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
@@ -43,9 +44,22 @@ type LoginFormData = z.infer<typeof loginSchema>;
 const Register = () => {
   const [activeTab, setActiveTab] = useState('login');
   const [loading, setLoading] = useState(false);
+  const [showVerification, setShowVerification] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
   const { signUp, signIn } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const verify = searchParams.get('verify');
+    const email = searchParams.get('email');
+    
+    if (verify === 'true' && email) {
+      setShowVerification(true);
+      setUserEmail(email);
+    }
+  }, [searchParams]);
 
   const registerForm = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -83,7 +97,9 @@ const Register = () => {
         title: "Cadastro realizado com sucesso!",
         description: "Verifique seu email para confirmar sua conta.",
       });
-      setActiveTab('login');
+      
+      // Redirect to verification page
+      window.location.href = `/register?email=${encodeURIComponent(data.email)}&verify=true`;
     } catch (error: any) {
       toast({
         title: "Erro no cadastro",
@@ -115,6 +131,18 @@ const Register = () => {
     
     setLoading(false);
   };
+
+  if (showVerification && userEmail) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto px-4 py-8">
+          <EmailVerificationNotice email={userEmail} />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

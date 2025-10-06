@@ -99,6 +99,9 @@ const CustomerRegistrationForm = ({ children, inline = false }: CustomerRegistra
 
       form.reset();
       setOpen(false);
+      
+      // Redirect to verification page
+      window.location.href = `/register?email=${encodeURIComponent(data.email)}&verify=true`;
     } catch (error: any) {
       console.error("Erro ao cadastrar cliente:", error);
       toast({

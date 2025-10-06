@@ -104,6 +104,9 @@ export default function BakeryRegistrationForm({ children, inline = false }: Bak
       });
       form.reset();
       setOpen(false);
+      
+      // Redirect to verification page
+      window.location.href = `/register?email=${encodeURIComponent(values.email)}&verify=true`;
     } catch (error: any) {
       console.error("Erro ao cadastrar padaria:", error);
       toast({
