@@ -1,19 +1,14 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@4.0.0";
+import { Webhook } from "https://esm.sh/standardwebhooks@1.0.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const hookSecret = Deno.env.get("SEND_EMAIL_HOOK_SECRET") as string;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-interface VerificationEmailRequest {
-  email: string;
-  token: string;
-  type: string;
-  redirectTo: string;
-}
 
 const handler = async (req: Request): Promise<Response> => {
   console.log("Send verification email function called");
@@ -23,13 +18,44 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  if (req.method !== "POST") {
+    return new Response("Method not allowed", { status: 405, headers: corsHeaders });
+  }
+
   try {
-    const { email, token, type, redirectTo }: VerificationEmailRequest = await req.json();
+    const payload = await req.text();
+    const headers = Object.fromEntries(req.headers);
+    
+    console.log("Received webhook payload");
+
+    // Verify webhook signature
+    const wh = new Webhook(hookSecret);
+    const {
+      user,
+      email_data: { token, token_hash, redirect_to, email_action_type },
+    } = wh.verify(payload, headers) as {
+      user: {
+        email: string;
+      };
+      email_data: {
+        token: string;
+        token_hash: string;
+        redirect_to: string;
+        email_action_type: string;
+      };
+    };
+
+    const email = user.email;
+    
+    if (!email || !token_hash) {
+      console.error("Missing required fields:", { email, token_hash });
+      throw new Error("Missing email or token_hash");
+    }
     
     console.log("Sending verification email to:", email);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const confirmLink = `${supabaseUrl}/auth/v1/verify?token=${token}&type=${type}&redirect_to=${redirectTo}`;
+    const confirmLink = `${supabaseUrl}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${redirect_to}`;
 
     const emailResponse = await resend.emails.send({
       from: "Padarize <onboarding@resend.dev>",
@@ -130,7 +156,7 @@ const handler = async (req: Request): Promise<Response> => {
               </p>
               
               <div class="code-box">
-                ${token.substring(0, 6).toUpperCase()}
+                ${token ? token.substring(0, 6).toUpperCase() : "N/A"}
               </div>
               
               <div class="warning">
