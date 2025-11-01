@@ -471,10 +471,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_user_role: {
-        Args: { user_uuid?: string }
-        Returns: string
-      }
+      get_user_role: { Args: { user_uuid?: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -482,10 +479,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_admin: {
-        Args: { user_uuid?: string }
-        Returns: boolean
-      }
+      is_admin: { Args: { user_uuid?: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "cliente" | "entregador" | "padaria"
