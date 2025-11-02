@@ -7,13 +7,14 @@ import { CartProvider } from "./contexts/CartContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import Index from "./pages/Index";
 import Products from "./pages/Products";
-import HowItWorksPage from "./pages/HowItWorks";
 import Register from "./pages/Register";
 import Cart from "./pages/Cart";
 import PedidosHistorico from "./pages/PedidosHistorico";
 import FazerPedido from "./pages/FazerPedido";
 import OrderTracking from "./pages/OrderTracking";
 import Admin from "./pages/Admin";
+import HowItWorksPage from "./pages/HowItWorks";
+import PadariaDashboard from "./pages/PadariaDashboard";
 import ProductDetail from "./pages/ProductDetail";
 import OrderConfirmation from "./pages/OrderConfirmation";
 import NotFound from "./pages/NotFound";
@@ -40,6 +41,7 @@ const App = () => (
               <Route path="/fazer-pedido" element={<FazerPedido />} />
               <Route path="/order-tracking" element={<OrderTracking />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/padaria/dashboard" element={<PadariaDashboard />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
