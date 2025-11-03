@@ -164,6 +164,7 @@ export type Database = {
           nome_padaria: string
           status_ativa: boolean
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           coordenadas_lat?: number | null
@@ -176,6 +177,7 @@ export type Database = {
           nome_padaria: string
           status_ativa?: boolean
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           coordenadas_lat?: number | null
@@ -188,6 +190,7 @@ export type Database = {
           nome_padaria?: string
           status_ativa?: boolean
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }

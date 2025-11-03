@@ -56,7 +56,7 @@ export default function BakeryRegistrationForm({ children, inline = false }: Bak
       const tempPassword = `Temp${Math.random().toString(36).slice(-8)}!`;
       
       // Sign up the user with Supabase Auth - metadata will trigger automatic profile creation
-      const { error: authError } = await supabase.auth.signUp({
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: values.email,
         password: tempPassword,
         options: {
@@ -79,13 +79,18 @@ export default function BakeryRegistrationForm({ children, inline = false }: Bak
         throw authError;
       }
 
-      // Now create the bakery record
+      if (!authData.user) {
+        throw new Error('Erro ao criar usuário');
+      }
+
+      // Now create the bakery record with user_id
       const location = MAPUTO_LOCATIONS.find(loc => loc.value === values.localizacao);
       
       const { error } = await supabase
         .from("padarias")
         .insert([
           {
+            user_id: authData.user.id,
             nome_padaria: values.nome_padaria,
             endereco: values.endereco,
             localizacao: values.localizacao,

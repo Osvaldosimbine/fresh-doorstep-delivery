@@ -50,10 +50,11 @@ export default function PadariaDashboard() {
         return;
       }
 
-      // Buscar ID da padaria
+      // Buscar ID da padaria do usuário autenticado
       const { data: padariaData, error: padariaError } = await supabase
         .from("padarias")
         .select("id")
+        .eq("user_id", user.id)
         .maybeSingle();
 
       if (padariaError || !padariaData) {
