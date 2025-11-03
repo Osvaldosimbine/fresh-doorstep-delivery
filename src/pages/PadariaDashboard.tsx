@@ -10,6 +10,9 @@ import { Loader2 } from "lucide-react";
 import { DashboardMetrics } from "@/components/padaria/DashboardMetrics";
 import { ProductManagement } from "@/components/padaria/ProductManagement";
 import { OrdersList } from "@/components/padaria/OrdersList";
+import { OrdersManagement } from "@/components/padaria/OrdersManagement";
+import { FinancialReports } from "@/components/padaria/FinancialReports";
+import { CustomersManagement } from "@/components/padaria/CustomersManagement";
 
 export default function PadariaDashboard() {
   const [loading, setLoading] = useState(true);
@@ -104,10 +107,13 @@ export default function PadariaDashboard() {
         </div>
 
         <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-6 lg:grid-cols-6">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="produtos">Produtos</TabsTrigger>
             <TabsTrigger value="pedidos">Pedidos</TabsTrigger>
+            <TabsTrigger value="gestao-pedidos">Gestão</TabsTrigger>
+            <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
+            <TabsTrigger value="clientes">Clientes</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -120,6 +126,18 @@ export default function PadariaDashboard() {
 
           <TabsContent value="pedidos">
             <OrdersList padariaId={padariaId} />
+          </TabsContent>
+
+          <TabsContent value="gestao-pedidos">
+            <OrdersManagement padariaId={padariaId} />
+          </TabsContent>
+
+          <TabsContent value="financeiro">
+            <FinancialReports padariaId={padariaId} />
+          </TabsContent>
+
+          <TabsContent value="clientes">
+            <CustomersManagement padariaId={padariaId} />
           </TabsContent>
         </Tabs>
       </main>
