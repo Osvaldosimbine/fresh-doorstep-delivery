@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import LocationSelect from '@/components/LocationSelect';
 import { EmailVerificationNotice } from '@/components/EmailVerificationNotice';
+import { RoleBasedRedirect } from '@/components/RoleBasedRedirect';
 
 const registerSchema = z.object({
   nome_completo: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
@@ -46,7 +47,8 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
   const [userEmail, setUserEmail] = useState("");
-  const { signUp, signIn } = useAuth();
+  const [shouldRedirect, setShouldRedirect] = useState(false);
+  const { signUp, signIn, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -122,15 +124,19 @@ const Register = () => {
         description: error.message,
         variant: "destructive",
       });
+      setLoading(false);
     } else {
       toast({
         title: "Login realizado com sucesso!",
       });
-      navigate('/');
+      setShouldRedirect(true);
     }
-    
-    setLoading(false);
   };
+
+  // Redirect after successful login
+  if (shouldRedirect && user) {
+    return <RoleBasedRedirect />;
+  }
 
   if (showVerification && userEmail) {
     return (

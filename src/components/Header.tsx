@@ -15,7 +15,7 @@ import {
 import MobileNavigation from "./MobileNavigation";
 
 const Header = () => {
-  const { user, signOut } = useAuth();
+  const { user, userProfile, signOut } = useAuth();
   const { items } = useCart();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -56,41 +56,51 @@ const Header = () => {
 
         {/* Navigation */}
         <nav className="hidden md:flex items-center gap-6">
-          <Link to="/" className="text-sm font-medium hover:text-primary transition-colors">
-            Página Principal
-          </Link>
-          <Link to="/como-funciona" className="text-sm font-medium hover:text-primary transition-colors">
-            Como Funciona
-          </Link>
-          <Link to="/products" className="text-sm font-medium hover:text-primary transition-colors">
-            Produtos
-          </Link>
-          {user && (
-            <Link to="/pedidos" className="text-sm font-medium hover:text-primary transition-colors">
-              Pedidos
+          {userProfile?.role === 'padaria' ? (
+            <Link to="/padaria/dashboard" className="text-sm font-medium hover:text-primary transition-colors">
+              Meu Painel
             </Link>
+          ) : (
+            <>
+              <Link to="/" className="text-sm font-medium hover:text-primary transition-colors">
+                Página Principal
+              </Link>
+              <Link to="/como-funciona" className="text-sm font-medium hover:text-primary transition-colors">
+                Como Funciona
+              </Link>
+              <Link to="/products" className="text-sm font-medium hover:text-primary transition-colors">
+                Produtos
+              </Link>
+              {user && (
+                <Link to="/pedidos" className="text-sm font-medium hover:text-primary transition-colors">
+                  Pedidos
+                </Link>
+              )}
+              <Link to="/register" className="text-sm font-medium hover:text-primary transition-colors">
+                Registro
+              </Link>
+            </>
           )}
-          <Link to="/register" className="text-sm font-medium hover:text-primary transition-colors">
-            Registro
-          </Link>
         </nav>
 
         {/* Actions */}
         <div className="flex items-center gap-2">
-          {/* Cart Icon for Mobile */}
-          <Link to="/cart" className="relative">
-            <Button variant="ghost" size="icon">
-              <ShoppingCart className="h-5 w-5" />
-              {cartItemsCount > 0 && (
-                <Badge 
-                  variant="destructive" 
-                  className="absolute -top-1 -right-1 h-4 w-4 flex items-center justify-center text-xs"
-                >
-                  {cartItemsCount}
-                </Badge>
-              )}
-            </Button>
-          </Link>
+          {/* Cart Icon - only for non-bakery users */}
+          {userProfile?.role !== 'padaria' && (
+            <Link to="/cart" className="relative">
+              <Button variant="ghost" size="icon">
+                <ShoppingCart className="h-5 w-5" />
+                {cartItemsCount > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-1 -right-1 h-4 w-4 flex items-center justify-center text-xs"
+                  >
+                    {cartItemsCount}
+                  </Badge>
+                )}
+              </Button>
+            </Link>
+          )}
 
           {user ? (
             <DropdownMenu>

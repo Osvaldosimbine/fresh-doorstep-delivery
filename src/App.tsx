@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CartProvider } from "./contexts/CartContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import Products from "./pages/Products";
 import Register from "./pages/Register";
@@ -37,11 +38,11 @@ const App = () => (
               <Route path="/cart" element={<Cart />} />
               <Route path="/product/:id" element={<ProductDetail />} />
               <Route path="/order-confirmation" element={<OrderConfirmation />} />
-              <Route path="/pedidos" element={<PedidosHistorico />} />
-              <Route path="/fazer-pedido" element={<FazerPedido />} />
-              <Route path="/order-tracking" element={<OrderTracking />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/padaria/dashboard" element={<PadariaDashboard />} />
+              <Route path="/pedidos" element={<ProtectedRoute><PedidosHistorico /></ProtectedRoute>} />
+              <Route path="/fazer-pedido" element={<ProtectedRoute><FazerPedido /></ProtectedRoute>} />
+              <Route path="/order-tracking" element={<ProtectedRoute><OrderTracking /></ProtectedRoute>} />
+              <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><Admin /></ProtectedRoute>} />
+              <Route path="/padaria/dashboard" element={<ProtectedRoute allowedRoles={['padaria', 'admin']}><PadariaDashboard /></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
