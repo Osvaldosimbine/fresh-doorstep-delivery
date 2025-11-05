@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Menu, ShoppingCart, User, LogOut } from "lucide-react";
-import logoCart from "@/assets/logo-cart.jpg";
+import logoIcon from "@/assets/logo-icon.jpg";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
@@ -42,11 +42,11 @@ const Header = () => {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2">
+        <Link to="/" className="flex items-center gap-3">
           <img 
-            src={logoCart} 
+            src={logoIcon} 
             alt="Bread Easy Logo" 
-            className="h-12 w-12 object-contain"
+            className="h-16 w-16 object-contain mix-blend-multiply"
           />
           <div>
             <h1 className="text-xl font-bold text-bread-crust">Bread Easy</h1>
