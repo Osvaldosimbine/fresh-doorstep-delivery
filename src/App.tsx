@@ -16,6 +16,7 @@ import OrderTracking from "./pages/OrderTracking";
 import Admin from "./pages/Admin";
 import HowItWorksPage from "./pages/HowItWorks";
 import PadariaDashboard from "./pages/PadariaDashboard";
+import CompletarCadastroPadaria from "./pages/CompletarCadastroPadaria";
 import ProductDetail from "./pages/ProductDetail";
 import OrderConfirmation from "./pages/OrderConfirmation";
 import NotFound from "./pages/NotFound";
@@ -43,6 +44,7 @@ const App = () => (
               <Route path="/order-tracking" element={<ProtectedRoute><OrderTracking /></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><Admin /></ProtectedRoute>} />
               <Route path="/padaria/dashboard" element={<ProtectedRoute allowedRoles={['padaria', 'admin']}><PadariaDashboard /></ProtectedRoute>} />
+              <Route path="/padaria/completar-cadastro" element={<ProtectedRoute allowedRoles={['padaria']}><CompletarCadastroPadaria /></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

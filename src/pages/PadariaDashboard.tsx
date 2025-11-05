@@ -61,12 +61,8 @@ export default function PadariaDashboard() {
         .maybeSingle();
 
       if (padariaError || !padariaData) {
-        toast({
-          title: "Padaria não encontrada",
-          description: "Você precisa completar o cadastro da sua padaria",
-          variant: "destructive",
-        });
-        navigate("/register");
+        // Redirecionar para completar cadastro
+        navigate("/padaria/completar-cadastro");
         return;
       }
 
