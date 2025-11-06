@@ -47,6 +47,47 @@ export type Database = {
         }
         Relationships: []
       }
+      entregador_status: {
+        Row: {
+          coordenadas_lat: number | null
+          coordenadas_lng: number | null
+          disponivel: boolean
+          entregador_id: string
+          id: string
+          localizacao_atual: string | null
+          turno_iniciado_em: string | null
+          ultimo_update: string | null
+        }
+        Insert: {
+          coordenadas_lat?: number | null
+          coordenadas_lng?: number | null
+          disponivel?: boolean
+          entregador_id: string
+          id?: string
+          localizacao_atual?: string | null
+          turno_iniciado_em?: string | null
+          ultimo_update?: string | null
+        }
+        Update: {
+          coordenadas_lat?: number | null
+          coordenadas_lng?: number | null
+          disponivel?: boolean
+          entregador_id?: string
+          id?: string
+          localizacao_atual?: string | null
+          turno_iniciado_em?: string | null
+          ultimo_update?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entregador_status_entregador_id_fkey"
+            columns: ["entregador_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entregas: {
         Row: {
           comissao_percentual: number
@@ -57,7 +98,11 @@ export type Database = {
           id: string
           local_entrega: string
           local_retirada: string
+          marcada_coletada_em: string | null
+          marcada_entregue_em: string | null
+          ordem_na_rota: number | null
           pedido_id: string
+          rota_id: string | null
           status_entrega: Database["public"]["Enums"]["status_entrega"]
           updated_at: string
           valor_comissao: number | null
@@ -71,7 +116,11 @@ export type Database = {
           id?: string
           local_entrega: string
           local_retirada: string
+          marcada_coletada_em?: string | null
+          marcada_entregue_em?: string | null
+          ordem_na_rota?: number | null
           pedido_id: string
+          rota_id?: string | null
           status_entrega?: Database["public"]["Enums"]["status_entrega"]
           updated_at?: string
           valor_comissao?: number | null
@@ -85,7 +134,11 @@ export type Database = {
           id?: string
           local_entrega?: string
           local_retirada?: string
+          marcada_coletada_em?: string | null
+          marcada_entregue_em?: string | null
+          ordem_na_rota?: number | null
           pedido_id?: string
+          rota_id?: string | null
           status_entrega?: Database["public"]["Enums"]["status_entrega"]
           updated_at?: string
           valor_comissao?: number | null
@@ -103,6 +156,13 @@ export type Database = {
             columns: ["pedido_id"]
             isOneToOne: false
             referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entregas_rota_id_fkey"
+            columns: ["rota_id"]
+            isOneToOne: false
+            referencedRelation: "rotas_otimizadas"
             referencedColumns: ["id"]
           },
         ]
@@ -251,6 +311,7 @@ export type Database = {
           created_at: string
           distancia_km: number | null
           endereco_entrega: string
+          entregador_id: string | null
           forma_pagamento: Database["public"]["Enums"]["forma_pagamento"]
           horario_agendado: string | null
           id: string
@@ -267,6 +328,7 @@ export type Database = {
           created_at?: string
           distancia_km?: number | null
           endereco_entrega: string
+          entregador_id?: string | null
           forma_pagamento: Database["public"]["Enums"]["forma_pagamento"]
           horario_agendado?: string | null
           id?: string
@@ -283,6 +345,7 @@ export type Database = {
           created_at?: string
           distancia_km?: number | null
           endereco_entrega?: string
+          entregador_id?: string | null
           forma_pagamento?: Database["public"]["Enums"]["forma_pagamento"]
           horario_agendado?: string | null
           id?: string
@@ -300,6 +363,13 @@ export type Database = {
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedidos_entregador_id_fkey"
+            columns: ["entregador_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -408,6 +478,66 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      rotas_otimizadas: {
+        Row: {
+          aceita_em: string | null
+          concluida_em: string | null
+          created_at: string | null
+          distancia_total_km: number
+          entregador_id: string | null
+          id: string
+          iniciada_em: string | null
+          ordem_paragens: Json
+          padaria_id: string
+          pedidos_ids: string[]
+          status: string
+          tempo_estimado_minutos: number
+        }
+        Insert: {
+          aceita_em?: string | null
+          concluida_em?: string | null
+          created_at?: string | null
+          distancia_total_km: number
+          entregador_id?: string | null
+          id?: string
+          iniciada_em?: string | null
+          ordem_paragens: Json
+          padaria_id: string
+          pedidos_ids: string[]
+          status?: string
+          tempo_estimado_minutos: number
+        }
+        Update: {
+          aceita_em?: string | null
+          concluida_em?: string | null
+          created_at?: string | null
+          distancia_total_km?: number
+          entregador_id?: string | null
+          id?: string
+          iniciada_em?: string | null
+          ordem_paragens?: Json
+          padaria_id?: string
+          pedidos_ids?: string[]
+          status?: string
+          tempo_estimado_minutos?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rotas_otimizadas_entregador_id_fkey"
+            columns: ["entregador_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rotas_otimizadas_padaria_id_fkey"
+            columns: ["padaria_id"]
+            isOneToOne: false
+            referencedRelation: "padarias"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

@@ -19,6 +19,7 @@ import PadariaDashboard from "./pages/PadariaDashboard";
 import CompletarCadastroPadaria from "./pages/CompletarCadastroPadaria";
 import ProductDetail from "./pages/ProductDetail";
 import OrderConfirmation from "./pages/OrderConfirmation";
+import EntregadorDashboard from "./pages/EntregadorDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,6 +46,7 @@ const App = () => (
               <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><Admin /></ProtectedRoute>} />
               <Route path="/padaria/dashboard" element={<ProtectedRoute allowedRoles={['padaria', 'admin']}><PadariaDashboard /></ProtectedRoute>} />
               <Route path="/padaria/completar-cadastro" element={<ProtectedRoute allowedRoles={['padaria']}><CompletarCadastroPadaria /></ProtectedRoute>} />
+              <Route path="/entregador/dashboard" element={<ProtectedRoute allowedRoles={['entregador', 'admin']}><EntregadorDashboard /></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
