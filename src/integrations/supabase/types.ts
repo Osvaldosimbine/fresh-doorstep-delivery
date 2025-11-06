@@ -252,6 +252,7 @@ export type Database = {
           distancia_km: number | null
           endereco_entrega: string
           forma_pagamento: Database["public"]["Enums"]["forma_pagamento"]
+          horario_agendado: string | null
           id: string
           localizacao_entrega: string | null
           observacoes: string | null
@@ -267,6 +268,7 @@ export type Database = {
           distancia_km?: number | null
           endereco_entrega: string
           forma_pagamento: Database["public"]["Enums"]["forma_pagamento"]
+          horario_agendado?: string | null
           id?: string
           localizacao_entrega?: string | null
           observacoes?: string | null
@@ -282,6 +284,7 @@ export type Database = {
           distancia_km?: number | null
           endereco_entrega?: string
           forma_pagamento?: Database["public"]["Enums"]["forma_pagamento"]
+          horario_agendado?: string | null
           id?: string
           localizacao_entrega?: string | null
           observacoes?: string | null

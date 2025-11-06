@@ -101,7 +101,8 @@ const CheckoutCart = () => {
         forma_pagamento: paymentMethod as 'dinheiro' | 'cartao' | 'mbway',
         observacoes: complement,
         taxa_servico_total: state.totalServiceFee,
-        localizacao_entrega: selectedLocation
+        localizacao_entrega: selectedLocation,
+        horario_agendado: selectedTimeSlot || undefined
       };
 
       // Process order through secure Edge Function with proper auth headers

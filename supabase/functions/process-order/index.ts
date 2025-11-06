@@ -18,6 +18,7 @@ interface OrderRequest {
   observacoes?: string;
   taxa_servico_total?: number;
   localizacao_entrega?: string;
+  horario_agendado?: string;
 }
 
 serve(async (req) => {
@@ -207,12 +208,31 @@ serve(async (req) => {
       );
     }
 
-    // Validate business hours (server-side time check)
+    // Determine order status based on scheduled time
     const now = new Date();
     const currentHour = now.getHours();
     const isValidOrderTime = currentHour >= 6 && currentHour < 22; // 6 AM to 10 PM
-
-    const status = isValidOrderTime ? 'em_processamento' : 'pendente';
+    
+    // If time slot is provided and outside business hours, set as pending (scheduled)
+    // If no time slot and within hours, process immediately
+    // If no time slot and outside hours, reject
+    const hasScheduledTime = !!orderData.horario_agendado;
+    
+    let status = 'pendente';
+    if (isValidOrderTime && !hasScheduledTime) {
+      status = 'em_processamento'; // Process immediately during business hours
+    } else if (!isValidOrderTime && !hasScheduledTime) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Pedidos fora do horário de funcionamento devem ter um horário agendado.' 
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+    // If hasScheduledTime is true, status remains 'pendente' for scheduled orders
 
     // Create order in transaction
     const { data: order, error: orderError } = await supabaseClient
@@ -227,7 +247,8 @@ serve(async (req) => {
         status_pedido: status,
         endereco_entrega: orderData.endereco_entrega,
         observacoes: orderData.observacoes || null,
-        distancia_km: 5.0 // Default distance, could be calculated from coordinates
+        distancia_km: 5.0, // Default distance, could be calculated from coordinates
+        horario_agendado: orderData.horario_agendado || null
       })
       .select()
       .single();
@@ -300,6 +321,12 @@ serve(async (req) => {
 
     console.log(`Order ${order.id} created successfully for user ${user.id}`);
 
+    const message = hasScheduledTime 
+      ? `Pedido agendado com sucesso para ${orderData.horario_agendado}`
+      : isValidOrderTime 
+        ? 'Pedido realizado com sucesso e será processado imediatamente'
+        : 'Pedido realizado com sucesso e será processado no horário de funcionamento';
+
     return new Response(
       JSON.stringify({ 
         success: true, 
@@ -308,9 +335,8 @@ serve(async (req) => {
         valor_produtos: valorTotal,
         taxa_servico: providedServiceFee,
         valor_total_final: valorTotal + providedServiceFee,
-        message: isValidOrderTime 
-          ? 'Order placed successfully and will be processed immediately'
-          : 'Order placed successfully and will be processed during business hours'
+        horario_agendado: orderData.horario_agendado,
+        message: message
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

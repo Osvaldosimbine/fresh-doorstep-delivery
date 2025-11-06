@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Minus, Plus, Clock } from "lucide-react";
+import { Minus, Plus } from "lucide-react";
 import { calculateBulkDiscount, getDiscountTier } from "@/lib/discount";
-import { isOrderTimeAllowed, getNextAvailableTime } from "@/lib/timeUtils";
 import OrderConfirmationDialog from "@/components/OrderConfirmationDialog";
 
 interface Produto {
@@ -32,7 +31,6 @@ interface PedidosProductCardProps {
 
 const PedidosProductCard = ({ produto, padaria, onAddToCart, quantity }: PedidosProductCardProps) => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const isTimeAllowed = isOrderTimeAllowed();
 
   const handleDecrease = () => {
     if (quantity > 0) {
@@ -41,7 +39,6 @@ const PedidosProductCard = ({ produto, padaria, onAddToCart, quantity }: Pedidos
   };
 
   const handleIncrease = () => {
-    if (!isTimeAllowed) return;
     onAddToCart(produto, padaria);
   };
 
@@ -96,13 +93,6 @@ const PedidosProductCard = ({ produto, padaria, onAddToCart, quantity }: Pedidos
       </div>
       
       <div className="flex flex-col items-end gap-2">
-        {!isTimeAllowed && (
-          <div className="flex items-center gap-1 text-xs text-destructive mb-1">
-            <Clock className="h-3 w-3" />
-            <span>Fora do horário</span>
-          </div>
-        )}
-        
         {quantity > 0 ? (
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
@@ -119,7 +109,7 @@ const PedidosProductCard = ({ produto, padaria, onAddToCart, quantity }: Pedidos
                 size="sm"
                 className="h-8 w-8 p-0 bg-bread-golden hover:bg-bread-crust"
                 onClick={handleIncrease}
-                disabled={!isTimeAllowed || produto.estoque_atual === 0}
+                disabled={produto.estoque_atual === 0}
               >
                 <Plus className="h-4 w-4" />
               </Button>
@@ -131,7 +121,6 @@ const PedidosProductCard = ({ produto, padaria, onAddToCart, quantity }: Pedidos
                 variant="outline"
                 onClick={() => setShowConfirmDialog(true)}
                 className="text-xs"
-                disabled={!isTimeAllowed}
               >
                 Confirmar Encomenda
               </Button>
@@ -141,22 +130,11 @@ const PedidosProductCard = ({ produto, padaria, onAddToCart, quantity }: Pedidos
           <Button 
             size="sm"
             onClick={handleIncrease}
-            disabled={!isTimeAllowed || produto.estoque_atual === 0}
+            disabled={produto.estoque_atual === 0}
             className="bg-bread-golden hover:bg-bread-crust disabled:opacity-50"
           >
-            {produto.estoque_atual === 0 
-              ? "Esgotado" 
-              : !isTimeAllowed 
-                ? "Fora do horário" 
-                : "Adicionar"
-            }
+            {produto.estoque_atual === 0 ? "Esgotado" : "Adicionar"}
           </Button>
-        )}
-        
-        {!isTimeAllowed && (
-          <p className="text-xs text-center text-muted-foreground max-w-32">
-            Próximo horário: {getNextAvailableTime()}
-          </p>
         )}
       </div>
       
