@@ -68,5 +68,8 @@ verify_jwt = false
 [functions.criar-rota-otimizada]
 verify_jwt = true
 
+[functions.processar-pedidos-prontos]
+verify_jwt = false
+
 [analytics]
 enabled = false
