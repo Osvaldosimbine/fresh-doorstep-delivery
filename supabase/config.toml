@@ -65,5 +65,8 @@ verify_jwt = false
 [functions.send-verification-email]
 verify_jwt = false
 
+[functions.criar-rota-otimizada]
+verify_jwt = true
+
 [analytics]
 enabled = false
