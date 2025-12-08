@@ -14,7 +14,7 @@ interface OrderRequest {
     preco_unitario: number;
   }>;
   endereco_entrega: string;
-  forma_pagamento: 'dinheiro' | 'cartao' | 'mbway';
+  forma_pagamento: 'dinheiro' | 'mpesa' | 'emola' | 'mkesh';
   observacoes?: string;
   taxa_servico_total?: number;
   localizacao_entrega?: string;
