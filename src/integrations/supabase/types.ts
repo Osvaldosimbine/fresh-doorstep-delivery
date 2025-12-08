@@ -619,7 +619,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "cliente" | "entregador" | "padaria"
-      forma_pagamento: "mpesa" | "emola" | "paypal" | "dinheiro"
+      forma_pagamento: "mpesa" | "emola" | "paypal" | "dinheiro" | "mkesh"
       status_cadastro: "pendente" | "aprovado" | "rejeitado"
       status_entrega: "aceita" | "em_transito" | "entregue" | "cancelada"
       status_pedido:
@@ -757,7 +757,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "cliente", "entregador", "padaria"],
-      forma_pagamento: ["mpesa", "emola", "paypal", "dinheiro"],
+      forma_pagamento: ["mpesa", "emola", "paypal", "dinheiro", "mkesh"],
       status_cadastro: ["pendente", "aprovado", "rejeitado"],
       status_entrega: ["aceita", "em_transito", "entregue", "cancelada"],
       status_pedido: [
