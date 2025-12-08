@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Clock, Package, CheckCircle, XCircle, Eye } from "lucide-react";
+import { Clock, Package, CheckCircle, XCircle, Eye, Bell } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -64,18 +64,81 @@ export function OrdersManagement({ padariaId }: OrdersManagementProps) {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("todos");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [newOrderIds, setNewOrderIds] = useState<Set<string>>(new Set());
   const { toast } = useToast();
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const previousOrdersRef = useRef<string[]>([]);
+
+  // Função para tocar som de notificação
+  const playNotificationSound = () => {
+    try {
+      // Usar Web Audio API para criar um som simples
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 800;
+      oscillator.type = 'sine';
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.5);
+    } catch (error) {
+      console.log('Could not play notification sound:', error);
+    }
+  };
 
   useEffect(() => {
     fetchOrders();
     
-    // Real-time updates
+    // Real-time updates com notificação
     const channel = supabase
       .channel('orders-management-changes')
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
+          schema: 'public',
+          table: 'pedidos',
+          filter: `padaria_id=eq.${padariaId}`,
+        },
+        (payload) => {
+          console.log('Novo pedido recebido:', payload);
+          
+          // Tocar som e mostrar toast
+          playNotificationSound();
+          
+          toast({
+            title: "🔔 Novo Pedido!",
+            description: "Um novo pedido acabou de chegar. Verifique a lista de pedidos.",
+            duration: 10000,
+          });
+          
+          // Marcar o pedido como novo para animação
+          if (payload.new && (payload.new as any).id) {
+            setNewOrderIds(prev => new Set(prev).add((payload.new as any).id));
+            
+            // Remover destaque após 30 segundos
+            setTimeout(() => {
+              setNewOrderIds(prev => {
+                const next = new Set(prev);
+                next.delete((payload.new as any).id);
+                return next;
+              });
+            }, 30000);
+          }
+          
+          fetchOrders();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
           schema: 'public',
           table: 'pedidos',
           filter: `padaria_id=eq.${padariaId}`,
@@ -225,12 +288,27 @@ export function OrdersManagement({ padariaId }: OrdersManagementProps) {
       </div>
 
       <div className="grid gap-4">
-        {filteredOrders.map((order) => (
-          <Card key={order.id}>
+        {filteredOrders.map((order) => {
+          const isNew = newOrderIds.has(order.id);
+          return (
+          <Card 
+            key={order.id}
+            className={`transition-all duration-500 ${
+              isNew 
+                ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-950 animate-pulse' 
+                : ''
+            }`}
+          >
             <CardContent className="p-6">
               <div className="flex justify-between items-start">
                 <div className="space-y-2 flex-1">
                   <div className="flex items-center gap-3">
+                    {isNew && (
+                      <Badge className="bg-green-500 text-white animate-bounce">
+                        <Bell className="h-3 w-3 mr-1" />
+                        NOVO
+                      </Badge>
+                    )}
                     <Badge className={`${statusColors[order.status_pedido]} text-white`}>
                       {getStatusIcon(order.status_pedido)}
                       <span className="ml-1">{statusLabels[order.status_pedido]}</span>
@@ -286,7 +364,8 @@ export function OrdersManagement({ padariaId }: OrdersManagementProps) {
               </div>
             </CardContent>
           </Card>
-        ))}
+        );
+        })}
 
         {filteredOrders.length === 0 && (
           <Card>

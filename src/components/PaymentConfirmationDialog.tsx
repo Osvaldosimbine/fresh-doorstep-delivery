@@ -3,8 +3,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Smartphone, CreditCard } from "lucide-react";
+import { Loader2, Smartphone, CreditCard, CheckCircle, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+// PIN de teste padrão para fase de desenvolvimento
+const TEST_PIN = "1234";
 
 interface PaymentConfirmationDialogProps {
   isOpen: boolean;
@@ -23,10 +26,13 @@ const PaymentConfirmationDialog = ({
 }: PaymentConfirmationDialogProps) => {
   const [pin, setPin] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [pinError, setPinError] = useState(false);
   const { toast } = useToast();
 
+  const isMobilePayment = ["mpesa", "emola", "mkesh"].includes(paymentMethod);
+
   const handleConfirmPayment = async () => {
-    if (["mpesa", "emola"].includes(paymentMethod) && !pin) {
+    if (isMobilePayment && !pin) {
       toast({
         title: "PIN obrigatório",
         description: "Por favor, insira seu PIN para confirmar o pagamento.",
@@ -35,17 +41,30 @@ const PaymentConfirmationDialog = ({
       return;
     }
 
+    // Validar PIN de teste
+    if (isMobilePayment && pin !== TEST_PIN) {
+      setPinError(true);
+      toast({
+        title: "PIN incorreto",
+        description: "O PIN inserido está incorreto. Use 1234 para testes.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setPinError(false);
     setIsProcessing(true);
 
     try {
       // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
       toast({
         title: "Pagamento confirmado!",
-        description: `Pagamento de ${amount.toFixed(2)} MT processado com sucesso.`,
+        description: `Pagamento de ${amount.toFixed(2)} MT processado com sucesso via ${getPaymentMethodName()}.`,
       });
       
+      setPin("");
       onConfirm();
     } catch (error) {
       toast({
@@ -61,8 +80,11 @@ const PaymentConfirmationDialog = ({
   const getPaymentIcon = () => {
     switch (paymentMethod) {
       case "mpesa":
+        return <Smartphone className="h-6 w-6 text-red-600" />;
       case "emola":
-        return <Smartphone className="h-6 w-6 text-green-600" />;
+        return <Smartphone className="h-6 w-6 text-orange-500" />;
+      case "mkesh":
+        return <Smartphone className="h-6 w-6 text-blue-600" />;
       case "cartao":
         return <CreditCard className="h-6 w-6 text-blue-600" />;
       default:
@@ -76,6 +98,8 @@ const PaymentConfirmationDialog = ({
         return "M-Pesa";
       case "emola":
         return "E-Mola";
+      case "mkesh":
+        return "Mkesh";
       case "cartao":
         return "Cartão";
       case "dinheiro":
@@ -105,20 +129,34 @@ const PaymentConfirmationDialog = ({
             </p>
           </div>
 
-          {["mpesa", "emola"].includes(paymentMethod) && (
+          {isMobilePayment && (
             <div className="space-y-2">
               <Label htmlFor="pin">PIN do {getPaymentMethodName()}</Label>
-              <Input
-                id="pin"
-                type="password"
-                maxLength={4}
-                placeholder="Digite seu PIN de 4 dígitos"
-                value={pin}
-                onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                className="text-center text-lg tracking-widest"
-              />
+              <div className="relative">
+                <Input
+                  id="pin"
+                  type="password"
+                  maxLength={4}
+                  placeholder="Digite seu PIN de 4 dígitos"
+                  value={pin}
+                  onChange={(e) => {
+                    setPin(e.target.value.replace(/\D/g, '').slice(0, 4));
+                    setPinError(false);
+                  }}
+                  className={`text-center text-lg tracking-widest ${pinError ? 'border-red-500 focus:ring-red-500' : ''}`}
+                />
+                {pin.length === 4 && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    {pin === TEST_PIN ? (
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                    ) : (
+                      <XCircle className="h-5 w-5 text-red-500" />
+                    )}
+                  </div>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground text-center">
-                Digite o PIN associado à sua conta {getPaymentMethodName()}
+                PIN de teste: <span className="font-mono font-bold">1234</span>
               </p>
             </div>
           )}

@@ -76,7 +76,7 @@ const CheckoutCart = () => {
     }
 
     // Show payment confirmation dialog for mobile money
-    if (["mpesa", "emola"].includes(paymentMethod)) {
+    if (["mpesa", "emola", "mkesh"].includes(paymentMethod)) {
       setShowPaymentDialog(true);
       return;
     }
@@ -399,7 +399,7 @@ const CheckoutCart = () => {
               <SelectItem value="dinheiro">Dinheiro</SelectItem>
               <SelectItem value="mpesa">M-Pesa</SelectItem>
               <SelectItem value="emola">E-Mola</SelectItem>
-              <SelectItem value="cartao">Cartão</SelectItem>
+              <SelectItem value="mkesh">Mkesh</SelectItem>
             </SelectContent>
           </Select>
         </CardContent>
