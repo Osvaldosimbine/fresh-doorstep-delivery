@@ -66,10 +66,10 @@ const CheckoutCart = () => {
   };
 
   const handleFinalizePedido = async () => {
-    if (!selectedLocation || !paymentMethod || !selectedTimeSlot) {
+    if (!selectedLocation || !paymentMethod) {
       toast({
         title: "Informações incompletas",
-        description: "Por favor, selecione a localização, horário de entrega e forma de pagamento.",
+        description: "Por favor, selecione a localização e forma de pagamento.",
         variant: "destructive",
       });
       return;
@@ -102,7 +102,7 @@ const CheckoutCart = () => {
         observacoes: complement,
         taxa_servico_total: state.totalServiceFee,
         localizacao_entrega: selectedLocation,
-        horario_agendado: selectedTimeSlot || undefined
+        horario_agendado: selectedTimeSlot === "assim_que_possivel" ? null : (selectedTimeSlot || null)
       };
 
       // Process order through secure Edge Function with proper auth headers
@@ -352,12 +352,15 @@ const CheckoutCart = () => {
           )}
           
           <div className="space-y-2">
-            <Label htmlFor="time-slot">Selecione o horário desejado</Label>
+            <Label htmlFor="time-slot">Selecione o horário desejado (opcional)</Label>
             <Select value={selectedTimeSlot} onValueChange={setSelectedTimeSlot}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Escolha um horário" />
+                <SelectValue placeholder="Entregar assim que possível" />
               </SelectTrigger>
               <SelectContent className="bg-background z-50">
+                <SelectItem value="assim_que_possivel">
+                  Entregar assim que possível
+                </SelectItem>
                 {ORDER_TIME_SLOTS.map((slot) => (
                   <SelectItem key={slot.start} value={slot.label}>
                     {slot.label}

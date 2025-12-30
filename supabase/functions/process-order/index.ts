@@ -208,30 +208,9 @@ serve(async (req) => {
       );
     }
 
-    // Determine order status based on scheduled time
-    const now = new Date();
-    const currentHour = now.getHours();
-    const isValidOrderTime = currentHour >= 6 && currentHour < 22; // 6 AM to 10 PM
-    
-    // If time slot is provided and outside business hours, set as pending (scheduled)
-    // If no time slot and within hours, process immediately
-    // If no time slot and outside hours, reject
-    const hasScheduledTime = !!orderData.horario_agendado;
-    
     // All orders start as 'pendente' - bakery changes to 'em_preparacao' when they accept
-    let status = 'pendente';
-    if (!isValidOrderTime && !hasScheduledTime) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Pedidos fora do horário de funcionamento devem ter um horário agendado.' 
-        }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-    // If hasScheduledTime is true, status remains 'pendente' for scheduled orders
+    // Orders are accepted 24/7 - no time restrictions
+    const status = 'pendente';
 
     // Create order in transaction
     const { data: order, error: orderError } = await supabaseClient
