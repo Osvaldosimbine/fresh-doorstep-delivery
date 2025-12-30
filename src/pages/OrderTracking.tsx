@@ -1,85 +1,117 @@
-import { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   MapPin, 
   Clock, 
   CheckCircle, 
-  Package, 
-  Truck, 
-  Home,
-  ArrowLeft 
+  Phone,
+  ArrowLeft,
+  RefreshCw,
+  AlertCircle
 } from "lucide-react";
+import { useOrderTracking } from "@/hooks/useOrderTracking";
+import { OrderTrackingStatus } from "@/components/OrderTrackingStatus";
 
 const OrderTracking = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { orderId } = location.state || {};
-  const [currentStatus, setCurrentStatus] = useState(0);
+  const { id: paramId } = useParams();
+  
+  // Support both route param and location state
+  const orderId = paramId || location.state?.orderId;
 
-  const orderStatuses = [
-    {
-      id: 0,
-      title: "Pedido Confirmado",
-      description: "Seu pedido foi confirmado e está sendo processado",
-      icon: CheckCircle,
-      completed: true,
-      time: "14:30"
-    },
-    {
-      id: 1,
-      title: "Preparando",
-      description: "A padaria está preparando seu pedido",
-      icon: Package,
-      completed: currentStatus >= 1,
-      time: currentStatus >= 1 ? "14:35" : null
-    },
-    {
-      id: 2,
-      title: "Pronto para Entrega",
-      description: "Entregador a caminho da padaria",
-      icon: Truck,
-      completed: currentStatus >= 2,
-      time: currentStatus >= 2 ? "14:45" : null
-    },
-    {
-      id: 3,
-      title: "Em Trânsito",
-      description: "Entregador a caminho do seu endereço",
-      icon: MapPin,
-      completed: currentStatus >= 3,
-      time: currentStatus >= 3 ? "14:50" : null
-    },
-    {
-      id: 4,
-      title: "Entregue",
-      description: "Pedido entregue com sucesso!",
-      icon: Home,
-      completed: currentStatus >= 4,
-      time: currentStatus >= 4 ? "15:05" : null
-    }
-  ];
-
-  // Simulate status progression
-  useEffect(() => {
-    if (currentStatus < 4) {
-      const timer = setTimeout(() => {
-        setCurrentStatus(prev => Math.min(prev + 1, 4));
-      }, 5000); // Update every 5 seconds for demo
-      
-      return () => clearTimeout(timer);
-    }
-  }, [currentStatus]);
+  const {
+    order,
+    statusHistory,
+    loading,
+    error,
+    statusOrder,
+    statusLabels,
+    statusDescriptions,
+    getEstimatedTime,
+    refetch,
+  } = useOrderTracking(orderId);
 
   if (!orderId) {
-    navigate("/pedidos");
-    return null;
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-16 text-center">
+          <AlertCircle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+          <h1 className="text-2xl font-bold mb-2">Pedido não encontrado</h1>
+          <p className="text-muted-foreground mb-6">
+            Por favor, forneça um ID de pedido válido
+          </p>
+          <Button onClick={() => navigate("/pedidos")}>
+            Ver Meus Pedidos
+          </Button>
+        </div>
+        <Footer />
+      </div>
+    );
   }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-2xl mx-auto space-y-6">
+            <Skeleton className="h-8 w-48" />
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-32" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="flex items-center gap-4">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="flex-1">
+                      <Skeleton className="h-4 w-32 mb-2" />
+                      <Skeleton className="h-3 w-48" />
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (error || !order) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-16 text-center">
+          <AlertCircle className="h-16 w-16 text-destructive mx-auto mb-4" />
+          <h1 className="text-2xl font-bold mb-2">Erro ao carregar pedido</h1>
+          <p className="text-muted-foreground mb-6">{error}</p>
+          <div className="flex gap-4 justify-center">
+            <Button variant="outline" onClick={refetch}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Tentar novamente
+            </Button>
+            <Button onClick={() => navigate("/pedidos")}>
+              Ver Meus Pedidos
+            </Button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  const isDelivered = order.status_pedido === "entregue";
+  const isCancelled = order.status_pedido === "cancelado";
 
   return (
     <div className="min-h-screen bg-background">
@@ -87,6 +119,7 @@ const OrderTracking = () => {
       
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
+          {/* Header */}
           <div className="flex items-center gap-4 mb-8">
             <Button
               onClick={() => navigate("/pedidos")}
@@ -96,144 +129,135 @@ const OrderTracking = () => {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar
             </Button>
-            <div>
-              <h1 className="text-2xl font-bold text-bread-crust">
-                Acompanhar Entrega
-              </h1>
-              <p className="text-muted-foreground">Pedido #{orderId}</p>
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold">Acompanhar Entrega</h1>
+              <p className="text-muted-foreground text-sm">
+                Pedido #{order.id.slice(0, 8)}
+              </p>
             </div>
+            <Button variant="ghost" size="icon" onClick={refetch}>
+              <RefreshCw className="h-4 w-4" />
+            </Button>
           </div>
 
+          {/* Status Card */}
           <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Status da Entrega</span>
-                <Badge variant={currentStatus === 4 ? "default" : "secondary"}>
-                  {currentStatus === 4 ? "Concluído" : "Em Andamento"}
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle>Status da Entrega</CardTitle>
+                <Badge 
+                  variant={isDelivered ? "default" : isCancelled ? "destructive" : "secondary"}
+                >
+                  {isDelivered ? "Concluído" : isCancelled ? "Cancelado" : "Em Andamento"}
                 </Badge>
-              </CardTitle>
+              </div>
+              {!isDelivered && !isCancelled && (
+                <p className="text-sm text-muted-foreground flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {getEstimatedTime()}
+                </p>
+              )}
             </CardHeader>
             <CardContent>
-              <div className="space-y-6">
-                {orderStatuses.map((status, index) => {
-                  const Icon = status.icon;
-                  const isActive = currentStatus === status.id;
-                  const isCompleted = status.completed;
-                  
-                  return (
-                    <div key={status.id} className="flex items-start gap-4">
-                      <div className={`
-                        flex items-center justify-center w-10 h-10 rounded-full border-2
-                        ${isCompleted 
-                          ? 'bg-green-100 border-green-500 text-green-600' 
-                          : isActive 
-                            ? 'bg-bread-golden/20 border-bread-golden text-bread-crust animate-pulse'
-                            : 'bg-gray-100 border-gray-300 text-gray-400'
-                        }
-                      `}>
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <h3 className={`font-medium ${
-                            isCompleted ? 'text-foreground' : 'text-muted-foreground'
-                          }`}>
-                            {status.title}
-                          </h3>
-                          {status.time && (
-                            <span className="text-sm text-muted-foreground">
-                              {status.time}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {status.description}
-                        </p>
-                        
-                        {isActive && currentStatus !== 4 && (
-                          <div className="mt-2">
-                            <div className="text-xs text-bread-crust font-medium">
-                              Tempo estimado: {
-                                currentStatus === 0 ? "5 min" :
-                                currentStatus === 1 ? "10 min" :
-                                currentStatus === 2 ? "5 min" :
-                                currentStatus === 3 ? "15 min" : "Concluído"
-                              }
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {index < orderStatuses.length - 1 && (
-                        <div className={`
-                          absolute left-5 mt-10 w-0.5 h-6 -ml-px
-                          ${isCompleted ? 'bg-green-500' : 'bg-gray-200'}
-                        `} />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+              <OrderTrackingStatus
+                statusOrder={statusOrder}
+                currentStatus={order.status_pedido}
+                statusLabels={statusLabels}
+                statusDescriptions={statusDescriptions}
+                statusHistory={statusHistory}
+              />
             </CardContent>
           </Card>
 
-          <Card>
+          {/* Order Details Card */}
+          <Card className="mb-6">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Informações da Entrega
+                <MapPin className="h-5 w-5" />
+                Detalhes do Pedido
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Tempo estimado total:</span>
-                <span className="font-medium">30-45 minutos</span>
+              <div>
+                <span className="text-sm text-muted-foreground">Endereço de entrega</span>
+                <p className="font-medium">{order.endereco_entrega}</p>
               </div>
-              
+
               <Separator />
-              
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Entregador:</span>
-                <span className="font-medium">
-                  {currentStatus >= 2 ? "João Silva" : "A definir"}
-                </span>
+
+              <div>
+                <span className="text-sm text-muted-foreground">Padaria</span>
+                <p className="font-medium">{order.padaria?.nome_padaria}</p>
+                <p className="text-sm text-muted-foreground">{order.padaria?.endereco}</p>
               </div>
-              
-              {currentStatus >= 2 && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Contacto:</span>
-                  <span className="font-medium">+258 84 123 4567</span>
+
+              <Separator />
+
+              <div>
+                <span className="text-sm text-muted-foreground">Itens</span>
+                <div className="mt-2 space-y-2">
+                  {order.itens.map((item) => (
+                    <div key={item.id} className="flex justify-between text-sm">
+                      <span>
+                        {item.quantidade}x {item.produto?.nome_produto || "Produto"}
+                      </span>
+                      <span className="font-medium">{item.subtotal.toFixed(2)} MT</span>
+                    </div>
+                  ))}
                 </div>
-              )}
-              
+              </div>
+
               <Separator />
-              
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">
-                  Tem alguma dúvida? Entre em conatcto conosco pelo WhatsApp
-                </p>
-                <Button variant="outline" size="sm" className="mt-2">
-                  Falar no WhatsApp
-                </Button>
+
+              <div className="flex justify-between font-semibold">
+                <span>Total</span>
+                <span>
+                  {(order.valor_total + (order.taxa_servico_total || 0)).toFixed(2)} MT
+                </span>
               </div>
             </CardContent>
           </Card>
 
-          {currentStatus === 4 && (
-            <div className="mt-6 text-center">
-              <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-                <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-green-800 mb-2">
+          {/* Delivery Person Card */}
+          {order.entregador && (
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Phone className="h-5 w-5" />
+                  Entregador
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">{order.entregador.nome_completo}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {order.entregador.telefone}
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={`tel:${order.entregador.telefone}`}>
+                      <Phone className="h-4 w-4 mr-2" />
+                      Ligar
+                    </a>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Completed State */}
+          {isDelivered && (
+            <div className="text-center">
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-6">
+                <CheckCircle className="h-12 w-12 text-primary mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">
                   Entrega Concluída!
                 </h3>
-                <p className="text-green-700 mb-4">
+                <p className="text-muted-foreground mb-4">
                   Seu pedido foi entregue com sucesso. Obrigado por escolher a Bread Easy!
                 </p>
-                <Button 
-                  onClick={() => navigate("/")}
-                  className="bg-bread-golden hover:bg-bread-crust"
-                >
+                <Button onClick={() => navigate("/")}>
                   Fazer Novo Pedido
                 </Button>
               </div>
