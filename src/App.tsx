@@ -43,6 +43,7 @@ const App = () => (
               <Route path="/pedidos" element={<ProtectedRoute><PedidosHistorico /></ProtectedRoute>} />
               <Route path="/fazer-pedido" element={<ProtectedRoute><FazerPedido /></ProtectedRoute>} />
               <Route path="/order-tracking" element={<ProtectedRoute><OrderTracking /></ProtectedRoute>} />
+              <Route path="/order-tracking/:id" element={<ProtectedRoute><OrderTracking /></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><Admin /></ProtectedRoute>} />
               <Route path="/padaria/dashboard" element={<ProtectedRoute allowedRoles={['padaria', 'admin']}><PadariaDashboard /></ProtectedRoute>} />
               <Route path="/padaria/completar-cadastro" element={<ProtectedRoute allowedRoles={['padaria']}><CompletarCadastroPadaria /></ProtectedRoute>} />

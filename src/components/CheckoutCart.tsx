@@ -133,20 +133,9 @@ const CheckoutCart = () => {
         });
         clearCart();
         
-        // Navigate to order confirmation page or orders list
+        // Navigate to order tracking page with the order ID
         setTimeout(() => {
-          navigate('/order-confirmation', {
-            state: {
-              orderData: {
-                id: data.order_id,
-                produtos: state.items,
-                total: state.total,
-                endereco_entrega: `${selectedLocation}${complement ? `, ${complement}` : ''}`,
-                forma_pagamento: paymentMethod,
-                timestamp: new Date()
-              }
-            }
-          });
+          navigate(`/order-tracking/${data.order_id}`);
         }, 2000);
       } else {
         throw new Error(data?.error || 'Unknown error occurred');
