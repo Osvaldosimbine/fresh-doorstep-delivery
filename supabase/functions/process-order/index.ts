@@ -218,10 +218,9 @@ serve(async (req) => {
     // If no time slot and outside hours, reject
     const hasScheduledTime = !!orderData.horario_agendado;
     
+    // All orders start as 'pendente' - bakery changes to 'em_preparacao' when they accept
     let status = 'pendente';
-    if (isValidOrderTime && !hasScheduledTime) {
-      status = 'em_processamento'; // Process immediately during business hours
-    } else if (!isValidOrderTime && !hasScheduledTime) {
+    if (!isValidOrderTime && !hasScheduledTime) {
       return new Response(
         JSON.stringify({ 
           error: 'Pedidos fora do horário de funcionamento devem ter um horário agendado.' 
