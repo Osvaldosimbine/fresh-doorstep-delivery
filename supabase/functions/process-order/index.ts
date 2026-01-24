@@ -299,11 +299,9 @@ serve(async (req) => {
 
     console.log(`Order ${order.id} created successfully for user ${user.id}`);
 
-    const message = hasScheduledTime 
+    const message = orderData.horario_agendado 
       ? `Pedido agendado com sucesso para ${orderData.horario_agendado}`
-      : isValidOrderTime 
-        ? 'Pedido realizado com sucesso e será processado imediatamente'
-        : 'Pedido realizado com sucesso e será processado no horário de funcionamento';
+      : 'Pedido realizado com sucesso';
 
     return new Response(
       JSON.stringify({ 
