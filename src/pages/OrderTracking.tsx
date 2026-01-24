@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -13,12 +14,15 @@ import {
   Phone,
   ArrowLeft,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Receipt
 } from "lucide-react";
 import { useOrderTracking } from "@/hooks/useOrderTracking";
 import { OrderTrackingStatus } from "@/components/OrderTrackingStatus";
+import ReceiptGenerator from "@/components/ReceiptGenerator";
 
 const OrderTracking = () => {
+  const [showReceipt, setShowReceipt] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { id: paramId } = useParams();
@@ -242,6 +246,51 @@ const OrderTracking = () => {
                     </a>
                   </Button>
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Receipt Button */}
+          {order && order.itens.length > 0 && (
+            <Card className="mb-6">
+              <CardContent className="pt-6">
+                <Button 
+                  onClick={() => setShowReceipt(!showReceipt)} 
+                  variant="outline" 
+                  className="w-full"
+                >
+                  <Receipt className="h-4 w-4 mr-2" />
+                  {showReceipt ? "Ocultar Recibo" : "Ver Recibo"}
+                </Button>
+                
+                {showReceipt && (
+                  <div className="mt-4">
+                    <ReceiptGenerator 
+                      orderData={{
+                        id: order.id.slice(0, 8).toUpperCase(),
+                        produto: {
+                          nome_produto: order.itens[0]?.produto?.nome_produto || "Produto",
+                          tipo_pao: "",
+                          preco: order.itens[0]?.preco_unitario || 0,
+                          padarias: {
+                            nome_padaria: order.padaria?.nome_padaria || "Padaria"
+                          }
+                        },
+                        quantity: order.itens.reduce((acc, item) => acc + item.quantidade, 0),
+                        location: {
+                          address: order.endereco_entrega
+                        },
+                        total: order.valor_total + (order.taxa_servico_total || 0),
+                        discountInfo: {
+                          discountAmount: 0,
+                          discountedPrice: order.itens[0]?.preco_unitario || 0,
+                          totalSavings: 0
+                        },
+                        timestamp: new Date(order.created_at)
+                      }}
+                    />
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
