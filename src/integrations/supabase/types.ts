@@ -362,7 +362,7 @@ export type Database = {
             foreignKeyName: "pedidos_cliente_id_fkey"
             columns: ["cliente_id"]
             isOneToOne: false
-            referencedRelation: "usuarios"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
