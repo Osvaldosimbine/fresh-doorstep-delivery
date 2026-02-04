@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -15,14 +15,24 @@ import {
   ArrowLeft,
   RefreshCw,
   AlertCircle,
-  Receipt
+  Receipt,
+  Truck,
+  Navigation,
+  Package
 } from "lucide-react";
 import { useOrderTracking } from "@/hooks/useOrderTracking";
 import { OrderTrackingStatus } from "@/components/OrderTrackingStatus";
 import ReceiptGenerator from "@/components/ReceiptGenerator";
+import { supabase } from "@/integrations/supabase/client";
 
 const OrderTracking = () => {
   const [showReceipt, setShowReceipt] = useState(false);
+  const [rotaInfo, setRotaInfo] = useState<{
+    distancia_total_km: number;
+    tempo_estimado_minutos: number;
+    status: string;
+    ordem_paragens: any;
+  } | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { id: paramId } = useParams();
@@ -41,6 +51,28 @@ const OrderTracking = () => {
     getEstimatedTime,
     refetch,
   } = useOrderTracking(orderId);
+
+  // Fetch route info if order is in transit
+  useEffect(() => {
+    const fetchRotaInfo = async () => {
+      if (!orderId || !order?.status_pedido) return;
+      
+      if (order.status_pedido === 'a_caminho') {
+        const { data: rotas } = await supabase
+          .from('rotas_otimizadas')
+          .select('distancia_total_km, tempo_estimado_minutos, status, ordem_paragens')
+          .contains('pedidos_ids', [orderId])
+          .in('status', ['aceita', 'em_andamento'])
+          .single();
+        
+        if (rotas) {
+          setRotaInfo(rotas);
+        }
+      }
+    };
+
+    fetchRotaInfo();
+  }, [orderId, order?.status_pedido]);
 
   if (!orderId) {
     return (
@@ -227,11 +259,11 @@ const OrderTracking = () => {
             <Card className="mb-6">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Phone className="h-5 w-5" />
+                  <Truck className="h-5 w-5" />
                   Entregador
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium">{order.entregador.nome_completo}</p>
@@ -245,6 +277,59 @@ const OrderTracking = () => {
                       Ligar
                     </a>
                   </Button>
+                </div>
+                
+                {/* Route Info */}
+                {rotaInfo && (
+                  <>
+                    <Separator />
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 text-muted-foreground">
+                          <Navigation className="h-4 w-4" />
+                        </div>
+                        <p className="text-lg font-semibold">{rotaInfo.distancia_total_km?.toFixed(1)} km</p>
+                        <p className="text-xs text-muted-foreground">Distância</p>
+                      </div>
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 text-muted-foreground">
+                          <Clock className="h-4 w-4" />
+                        </div>
+                        <p className="text-lg font-semibold">{rotaInfo.tempo_estimado_minutos} min</p>
+                        <p className="text-xs text-muted-foreground">Tempo Est.</p>
+                      </div>
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 text-muted-foreground">
+                          <Package className="h-4 w-4" />
+                        </div>
+                        <p className="text-lg font-semibold">
+                          {Array.isArray(rotaInfo.ordem_paragens) 
+                            ? rotaInfo.ordem_paragens.length - 1 
+                            : 0}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Paragens</p>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          )}
+          
+          {/* Waiting for delivery person */}
+          {order.status_pedido === 'a_caminho' && !order.entregador && (
+            <Card className="mb-6">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-primary/10 rounded-full animate-pulse">
+                    <Truck className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium">Procurando entregador...</p>
+                    <p className="text-sm text-muted-foreground">
+                      Seu pedido está pronto e estamos atribuindo um entregador.
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
