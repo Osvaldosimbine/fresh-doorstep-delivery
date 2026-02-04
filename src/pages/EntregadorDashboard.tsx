@@ -4,8 +4,10 @@ import { EntregadorStatusToggle } from '@/components/entregador/StatusToggle';
 import { GanhosSection } from '@/components/entregador/GanhosSection';
 import { HistoricoViagens } from '@/components/entregador/HistoricoViagens';
 import { RotasAtivas } from '@/components/entregador/RotasAtivas';
+import { PedidosDisponiveis } from '@/components/entregador/PedidosDisponiveis';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { Badge } from '@/components/ui/badge';
 
 const EntregadorDashboard = () => {
   const [activeTab, setActiveTab] = useState('inicio');
@@ -19,8 +21,11 @@ const EntregadorDashboard = () => {
           <h1 className="text-3xl font-bold mb-8 text-foreground">Dashboard do Entregador</h1>
           
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 mb-8">
+            <TabsList className="grid w-full grid-cols-5 mb-8">
               <TabsTrigger value="inicio">Início</TabsTrigger>
+              <TabsTrigger value="disponiveis" className="relative">
+                Disponíveis
+              </TabsTrigger>
               <TabsTrigger value="rotas">Rotas Ativas</TabsTrigger>
               <TabsTrigger value="ganhos">Ganhos</TabsTrigger>
               <TabsTrigger value="historico">Histórico</TabsTrigger>
@@ -28,6 +33,10 @@ const EntregadorDashboard = () => {
             
             <TabsContent value="inicio" className="space-y-6">
               <EntregadorStatusToggle />
+            </TabsContent>
+            
+            <TabsContent value="disponiveis">
+              <PedidosDisponiveis />
             </TabsContent>
             
             <TabsContent value="rotas">

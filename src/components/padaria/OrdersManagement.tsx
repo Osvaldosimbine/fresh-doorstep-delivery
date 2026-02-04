@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Clock, Package, CheckCircle, XCircle, Eye, Bell } from "lucide-react";
+import { Clock, Package, CheckCircle, XCircle, Eye, Bell, Truck, User, MapPin } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -29,7 +29,13 @@ interface Order {
   taxa_servico_total: number;
   endereco_entrega: string;
   observacoes: string | null;
+  horario_agendado: string | null;
+  entregador_id: string | null;
   cliente: {
+    nome_completo: string;
+    telefone: string;
+  } | null;
+  entregador: {
     nome_completo: string;
     telefone: string;
   } | null;
@@ -174,7 +180,9 @@ export function OrdersManagement({ padariaId }: OrdersManagementProps) {
           taxa_servico_total,
           endereco_entrega,
           observacoes,
+          horario_agendado,
           cliente_id,
+          entregador_id,
           itens_pedido (
             quantidade,
             preco_unitario,
@@ -195,6 +203,17 @@ export function OrdersManagement({ padariaId }: OrdersManagementProps) {
         .select("id, nome_completo, telefone")
         .in("id", clienteIds);
 
+      // Buscar informações dos entregadores
+      const entregadorIds = [...new Set((data || []).map(o => o.entregador_id).filter(Boolean))];
+      let entregadoresMap = new Map();
+      if (entregadorIds.length > 0) {
+        const { data: entregadores } = await supabase
+          .from("profiles")
+          .select("id, nome_completo, telefone")
+          .in("id", entregadorIds);
+        entregadoresMap = new Map(entregadores?.map(e => [e.id, e]));
+      }
+
       // Mapear clientes
       const clientesMap = new Map(clientes?.map(c => [c.id, c]));
 
@@ -202,6 +221,7 @@ export function OrdersManagement({ padariaId }: OrdersManagementProps) {
       const ordersWithClientes = (data || []).map(order => ({
         ...order,
         cliente: clientesMap.get(order.cliente_id) || null,
+        entregador: order.entregador_id ? entregadoresMap.get(order.entregador_id) || null : null,
       }));
 
       setOrders(ordersWithClientes as Order[]);
@@ -295,16 +315,16 @@ export function OrdersManagement({ padariaId }: OrdersManagementProps) {
             key={order.id}
             className={`transition-all duration-500 ${
               isNew 
-                ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-950 animate-pulse' 
+                ? 'ring-2 ring-primary bg-primary/5 animate-pulse' 
                 : ''
             }`}
           >
             <CardContent className="p-6">
               <div className="flex justify-between items-start">
                 <div className="space-y-2 flex-1">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-wrap">
                     {isNew && (
-                      <Badge className="bg-green-500 text-white animate-bounce">
+                      <Badge className="bg-primary text-primary-foreground animate-bounce">
                         <Bell className="h-3 w-3 mr-1" />
                         NOVO
                       </Badge>
@@ -313,22 +333,59 @@ export function OrdersManagement({ padariaId }: OrdersManagementProps) {
                       {getStatusIcon(order.status_pedido)}
                       <span className="ml-1">{statusLabels[order.status_pedido]}</span>
                     </Badge>
+                    {order.horario_agendado && (
+                      <Badge variant="outline" className="border-primary/50">
+                        <Clock className="h-3 w-3 mr-1" />
+                        Agendado: {order.horario_agendado}
+                      </Badge>
+                    )}
                     <span className="text-sm text-muted-foreground">
                       {new Date(order.created_at).toLocaleString('pt-MZ')}
                     </span>
                   </div>
 
-                  <div>
-                    <p className="font-semibold">{order.cliente?.nome_completo || "Cliente"}</p>
-                    <p className="text-sm text-muted-foreground">{order.cliente?.telefone || "N/A"}</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <div className="flex items-center gap-2 text-sm font-medium">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        Cliente
+                      </div>
+                      <p className="font-semibold">{order.cliente?.nome_completo || "Cliente"}</p>
+                      <p className="text-sm text-muted-foreground">{order.cliente?.telefone || "N/A"}</p>
+                    </div>
+                    
+                    {order.entregador && (
+                      <div>
+                        <div className="flex items-center gap-2 text-sm font-medium">
+                          <Truck className="h-4 w-4 text-muted-foreground" />
+                          Entregador
+                        </div>
+                        <p className="font-semibold">{order.entregador.nome_completo}</p>
+                        <p className="text-sm text-muted-foreground">{order.entregador.telefone}</p>
+                      </div>
+                    )}
+                    
+                    {!order.entregador && order.status_pedido === "a_caminho" && (
+                      <div>
+                        <div className="flex items-center gap-2 text-sm font-medium">
+                          <Truck className="h-4 w-4 text-muted-foreground" />
+                          Entregador
+                        </div>
+                        <p className="text-sm text-muted-foreground italic">Aguardando atribuição...</p>
+                      </div>
+                    )}
                   </div>
 
-                  <div>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm truncate max-w-[200px]">{order.endereco_entrega}</p>
+                    </div>
                     <p className="text-sm">
                       <span className="font-medium">Total:</span> {order.valor_total.toFixed(2)} MZN
                     </p>
                     <p className="text-sm">
-                      <span className="font-medium">Itens:</span> {order.itens_pedido?.length || 0} produto(s)
+                      <span className="font-medium">Itens:</span> {order.itens_pedido?.length || 0}
                     </p>
                   </div>
                 </div>

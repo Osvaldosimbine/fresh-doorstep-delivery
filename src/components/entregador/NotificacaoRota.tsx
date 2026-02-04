@@ -99,6 +99,15 @@ export const NotificacaoRota = ({ rota, open, onOpenChange, onAceitar }: Notific
   if (!rota) return null;
 
   const numParagens = rota.ordem_paragens?.length - 1 || 0;
+  
+  // Calcular lucro estimado
+  const calcularLucroEstimado = (): number => {
+    const baseComissao = 50;
+    const comissaoPorKm = 5;
+    return baseComissao + ((rota.distancia_total_km || 0) * comissaoPorKm);
+  };
+  
+  const lucroEstimado = calcularLucroEstimado();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -146,6 +155,21 @@ export const NotificacaoRota = ({ rota, open, onOpenChange, onAceitar }: Notific
               </div>
             </div>
           </Card>
+          
+          {/* Lucro Estimado Destacado */}
+          <Card className="p-4 bg-primary/10 border-primary/30">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/20 rounded-full">
+                  <Navigation className="text-primary" size={24} />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Lucro Estimado</p>
+                  <p className="text-2xl font-bold text-primary">{lucroEstimado.toFixed(0)} MZN</p>
+                </div>
+              </div>
+            </div>
+          </Card>
 
           <div className="bg-muted/50 p-3 rounded-lg">
             <p className="text-sm text-muted-foreground mb-2">Endereços de entrega:</p>
@@ -163,8 +187,8 @@ export const NotificacaoRota = ({ rota, open, onOpenChange, onAceitar }: Notific
           <Button variant="outline" onClick={handleRecusar}>
             Recusar
           </Button>
-          <Button onClick={handleAceitar} className="bg-green-600 hover:bg-green-700">
-            Aceitar Rota
+          <Button onClick={handleAceitar} className="bg-primary hover:bg-primary/90">
+            Aceitar Rota - {lucroEstimado.toFixed(0)} MZN
           </Button>
         </DialogFooter>
       </DialogContent>
