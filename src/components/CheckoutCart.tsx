@@ -8,12 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Trash2, MapPin, CreditCard, TrendingDown, Truck, Clock, Calendar } from "lucide-react";
+import { Trash2, MapPin, CreditCard, TrendingDown, Truck, Clock, Calendar, Navigation, AlertTriangle } from "lucide-react";
 import { MAPUTO_LOCATIONS } from "@/constants/locations";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { getLocationCoordinates, getServiceFeeTier } from "@/lib/serviceFee";
-import { isOrderTimeAllowed, getNextAvailableTime, ORDER_TIME_SLOTS } from "@/lib/timeUtils";
+import { isOrderTimeAllowed, getNextAvailableTime, getAvailableDeliveryDates, getTimeSlotsForDate, buildScheduledTime } from "@/lib/timeUtils";
 import PaymentConfirmationDialog from "./PaymentConfirmationDialog";
 
 const CheckoutCart = () => {
@@ -25,7 +25,13 @@ const CheckoutCart = () => {
   const [paymentMethod, setPaymentMethod] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>("");
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState("");
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [gpsError, setGpsError] = useState("");
+
+  const deliveryDates = getAvailableDeliveryDates();
+  const availableSlots = selectedDate ? getTimeSlotsForDate(selectedDate) : [];
 
   // Update service fees when location changes
   useEffect(() => {
@@ -42,7 +48,6 @@ const CheckoutCart = () => {
       removeItem(itemId);
     } else {
       updateQuantity(itemId, newQuantity);
-      // Recalculate service fees if location is selected
       if (selectedLocation) {
         const coordinates = getLocationCoordinates(selectedLocation);
         if (coordinates) {
@@ -52,45 +57,95 @@ const CheckoutCart = () => {
     }
   };
 
-  const handleCheckout = () => {
-    if (state.items.length === 0) {
-      toast({
-        title: "Carrinho vazio",
-        description: "Adicione produtos ao carrinho antes de finalizar o pedido.",
-        variant: "destructive"
-      });
+  const handleUseGPS = () => {
+    setGpsLoading(true);
+    setGpsError("");
+
+    if (!navigator.geolocation) {
+      setGpsError("O seu navegador não suporta geolocalização.");
+      setGpsLoading(false);
       return;
     }
 
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        // Find the closest known location
+        let closestLocation: typeof MAPUTO_LOCATIONS[number] = MAPUTO_LOCATIONS[0];
+        let minDist = Infinity;
+        for (const loc of MAPUTO_LOCATIONS) {
+          const dist = Math.sqrt(
+            Math.pow(loc.coordinates.lat - latitude, 2) +
+            Math.pow(loc.coordinates.lng - longitude, 2)
+          );
+          if (dist < minDist) {
+            minDist = dist;
+            closestLocation = loc;
+          }
+        }
+        setSelectedLocation(closestLocation.value);
+        setGpsLoading(false);
+        toast({
+          title: "Localização detectada",
+          description: `Localização mais próxima: ${closestLocation.label}`,
+        });
+      },
+      (error) => {
+        setGpsLoading(false);
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            setGpsError(
+              "Permissão de localização negada. Vá às configurações do navegador > Privacidade > Serviços de localização e permita o acesso para este site."
+            );
+            break;
+          case error.POSITION_UNAVAILABLE:
+            setGpsError("Localização indisponível. Verifique se o GPS está ativado no seu dispositivo.");
+            break;
+          case error.TIMEOUT:
+            setGpsError("Tempo esgotado. Tente novamente ou selecione manualmente.");
+            break;
+          default:
+            setGpsError("Erro ao obter localização. Selecione manualmente abaixo.");
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  const validateFields = (): boolean => {
+    if (state.items.length === 0) {
+      toast({ title: "Carrinho vazio", description: "Adicione produtos antes de finalizar.", variant: "destructive" });
+      return false;
+    }
+    if (!selectedLocation) {
+      toast({ title: "Localização obrigatória", description: "Selecione ou detecte a sua localização.", variant: "destructive" });
+      return false;
+    }
+    if (!paymentMethod) {
+      toast({ title: "Pagamento obrigatório", description: "Selecione a forma de pagamento.", variant: "destructive" });
+      return false;
+    }
+    return true;
+  };
+
+  const handleFinalizePedido = () => {
+    if (!validateFields()) return;
     setShowPaymentDialog(true);
   };
 
-  const handleFinalizePedido = async () => {
-    if (!selectedLocation || !paymentMethod) {
-      toast({
-        title: "Informações incompletas",
-        description: "Por favor, selecione a localização e forma de pagamento.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Show payment confirmation dialog for mobile money
-    if (["mpesa", "emola", "mkesh"].includes(paymentMethod)) {
-      setShowPaymentDialog(true);
-      return;
-    }
-
-    // For other payment methods, process directly
-    await processOrder();
-  };
-
   const processOrder = async () => {
-
     setIsSubmitting(true);
 
     try {
-      // Prepare order data for secure processing
+      let horarioAgendado: string | null = null;
+      if (selectedDate && selectedTimeSlot && selectedTimeSlot !== "assim_que_possivel") {
+        // Find slot start time from label
+        const slot = availableSlots.find(s => s.label === selectedTimeSlot);
+        if (slot) {
+          horarioAgendado = buildScheduledTime(selectedDate, slot.start);
+        }
+      }
+
       const orderData = {
         produtos: state.items.map(item => ({
           id: item.id,
@@ -98,47 +153,46 @@ const CheckoutCart = () => {
           preco_unitario: item.preco
         })),
         endereco_entrega: `${selectedLocation}${complement ? `, ${complement}` : ''}`,
-        forma_pagamento: paymentMethod as 'dinheiro' | 'cartao' | 'mbway',
+        forma_pagamento: paymentMethod as 'dinheiro' | 'mpesa' | 'emola' | 'mkesh',
         observacoes: complement,
         taxa_servico_total: state.totalServiceFee,
         localizacao_entrega: selectedLocation,
-        horario_agendado: selectedTimeSlot === "assim_que_possivel" ? null : (selectedTimeSlot || null)
+        horario_agendado: horarioAgendado,
       };
 
-      // Process order through secure Edge Function with proper auth headers
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session?.access_token) {
-        toast({
-          title: "Sessão expirada",
-          description: "Por favor, faça login novamente.",
-          variant: "destructive",
-        });
+        toast({ title: "Sessão expirada", description: "Por favor, faça login novamente.", variant: "destructive" });
         return;
       }
 
       const { data, error } = await supabase.functions.invoke('process-order', {
         body: orderData,
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
+        headers: { Authorization: `Bearer ${session.access_token}` },
       });
 
       if (error) throw error;
 
       if (data?.success) {
-        toast({
-          title: "Pedido realizado com sucesso!",
-          description: data.message || "Você receberá uma confirmação em breve.",
-        });
-        clearCart();
+        // Navigate to confirmation page with order data
+        const confirmationData = {
+          orderId: data.order_id,
+          items: state.items,
+          total: state.total,
+          totalSavings: state.totalSavings,
+          totalServiceFee: state.totalServiceFee,
+          paymentMethod,
+          location: selectedLocation,
+          complement,
+          horarioAgendado,
+          timestamp: new Date().toISOString(),
+        };
         
-        // Navigate to order tracking page with the order ID
-        setTimeout(() => {
-          navigate(`/order-tracking/${data.order_id}`);
-        }, 2000);
+        clearCart();
+        navigate('/order-confirmation', { state: confirmationData });
       } else {
-        throw new Error(data?.error || 'Unknown error occurred');
+        throw new Error(data?.error || 'Erro desconhecido');
       }
     } catch (error: any) {
       console.error('Order processing error:', error);
@@ -157,6 +211,9 @@ const CheckoutCart = () => {
       <Card className="w-full max-w-md mx-auto">
         <CardContent className="pt-6 text-center">
           <p className="text-muted-foreground">Seu carrinho está vazio</p>
+          <Button onClick={() => navigate('/products')} className="mt-4">
+            Ver Produtos
+          </Button>
         </CardContent>
       </Card>
     );
@@ -164,6 +221,7 @@ const CheckoutCart = () => {
 
   return (
     <div className="space-y-6">
+      {/* Items */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-bread-crust">
@@ -180,58 +238,28 @@ const CheckoutCart = () => {
                 <div className="flex items-center gap-2">
                   {item.desconto_aplicado > 0 ? (
                     <>
-                      <span className="text-xs text-muted-foreground line-through">
-                        {item.preco_original.toFixed(2)} MT
-                      </span>
-                      <p className="text-sm font-semibold text-bread-crust">
-                        {item.preco.toFixed(2)} MT
-                      </p>
-                      <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
-                        -{item.desconto_aplicado.toFixed(1)} MT
-                      </Badge>
+                      <span className="text-xs text-muted-foreground line-through">{item.preco_original.toFixed(2)} MT</span>
+                      <p className="text-sm font-semibold text-bread-crust">{item.preco.toFixed(2)} MT</p>
+                      <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">-{item.desconto_aplicado.toFixed(1)} MT</Badge>
                     </>
                   ) : (
                     <p className="text-sm font-semibold text-bread-crust">{item.preco.toFixed(2)} MT</p>
                   )}
                 </div>
-                
                 <div className="space-y-1">
                   {item.economia_total > 0 && (
-                    <p className="text-xs text-green-600 font-medium">
-                      Economia: {item.economia_total.toFixed(2)} MT
-                    </p>
+                    <p className="text-xs text-green-600 font-medium">Economia: {item.economia_total.toFixed(2)} MT</p>
                   )}
                   {item.taxa_servico_unitaria && (
-                    <p className="text-xs text-orange-600 font-medium">
-                      Taxa de serviço: +{item.taxa_servico_unitaria.toFixed(2)} MT/un ({item.distancia_km}km)
-                    </p>
+                    <p className="text-xs text-orange-600 font-medium">Taxa de serviço: +{item.taxa_servico_unitaria.toFixed(2)} MT/un ({item.distancia_km}km)</p>
                   )}
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8 w-8 p-0"
-                  onClick={() => handleUpdateQuantity(item.id, item.quantidade - 1)}
-                >
-                  -
-                </Button>
+                <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => handleUpdateQuantity(item.id, item.quantidade - 1)}>-</Button>
                 <span className="w-8 text-center font-medium">{item.quantidade}</span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8 w-8 p-0"
-                  onClick={() => handleUpdateQuantity(item.id, item.quantidade + 1)}
-                >
-                  +
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                  onClick={() => removeItem(item.id)}
-                >
+                <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => handleUpdateQuantity(item.id, item.quantidade + 1)}>+</Button>
+                <Button size="sm" variant="outline" className="h-8 w-8 p-0 text-destructive hover:text-destructive" onClick={() => removeItem(item.id)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
@@ -240,13 +268,12 @@ const CheckoutCart = () => {
           
           <Separator />
           
-          {/* Detailed Breakdown */}
+          {/* Breakdown */}
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Custo dos pães:</span>
               <span>{(state.total - state.totalServiceFee - (state.items.reduce((sum, item) => sum + item.quantidade, 0) * 3)).toFixed(2)} MT</span>
             </div>
-            
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Taxa de serviço (3 MT/pão):</span>
               <span>+{(state.items.reduce((sum, item) => sum + item.quantidade, 0) * 3).toFixed(2)} MT</span>
@@ -258,15 +285,13 @@ const CheckoutCart = () => {
                   <TrendingDown className="h-4 w-4" />
                   <span className="font-semibold text-sm">Desconto por Volume (50+ pães)</span>
                 </div>
-                <div className="space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Preço original:</span>
-                    <span className="line-through">{state.originalTotal.toFixed(2)} MT</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-green-600 font-medium">Desconto aplicado:</span>
-                    <span className="text-green-600 font-semibold">-{state.totalSavings.toFixed(2)} MT</span>
-                  </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Preço original:</span>
+                  <span className="line-through">{state.originalTotal.toFixed(2)} MT</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-green-600 font-medium">Desconto aplicado:</span>
+                  <span className="text-green-600 font-semibold">-{state.totalSavings.toFixed(2)} MT</span>
                 </div>
               </div>
             )}
@@ -277,13 +302,11 @@ const CheckoutCart = () => {
                   <Truck className="h-4 w-4" />
                   <span className="font-semibold text-sm">Taxa de Mobilidade</span>
                 </div>
-                <div className="space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      {state.items[0]?.distancia_km && getServiceFeeTier(state.items[0].distancia_km)}
-                    </span>
-                    <span className="text-blue-600 font-semibold">+{state.totalServiceFee.toFixed(2)} MT</span>
-                  </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    {state.items[0]?.distancia_km && getServiceFeeTier(state.items[0].distancia_km)}
+                  </span>
+                  <span className="text-blue-600 font-semibold">+{state.totalServiceFee.toFixed(2)} MT</span>
                 </div>
               </div>
             )}
@@ -298,6 +321,7 @@ const CheckoutCart = () => {
         </CardContent>
       </Card>
 
+      {/* Location with GPS */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-bread-crust">
@@ -306,8 +330,25 @@ const CheckoutCart = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={handleUseGPS}
+            disabled={gpsLoading}
+          >
+            <Navigation className="h-4 w-4 mr-2" />
+            {gpsLoading ? "Detectando localização..." : "Usar localização actual (GPS)"}
+          </Button>
+
+          {gpsError && (
+            <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+              <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-destructive">{gpsError}</p>
+            </div>
+          )}
+
           <div className="space-y-2">
-            <Label htmlFor="location">Localização</Label>
+            <Label htmlFor="location">Ou selecione manualmente</Label>
             <Select value={selectedLocation} onValueChange={setSelectedLocation}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione sua localização" />
@@ -334,11 +375,12 @@ const CheckoutCart = () => {
         </CardContent>
       </Card>
 
+      {/* Scheduling with Date + Time */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-bread-crust">
             <Clock className="h-5 w-5" />
-            Horário de Entrega
+            Data e Horário de Entrega
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -346,25 +388,35 @@ const CheckoutCart = () => {
             <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
               <Calendar className="h-4 w-4 text-yellow-600" />
               <p className="text-sm text-yellow-800">
-                <strong>Fora do horário de funcionamento.</strong> Seu pedido será agendado para: {getNextAvailableTime()}
+                <strong>Fora do horário de funcionamento.</strong> Próximo horário: {getNextAvailableTime()}
               </p>
             </div>
           )}
-          
+
           <div className="space-y-2">
-            <Label htmlFor="time-slot">Selecione o horário desejado (opcional)</Label>
-            <Select value={selectedTimeSlot} onValueChange={setSelectedTimeSlot}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Entregar assim que possível" />
+            <Label>Data de entrega</Label>
+            <Select value={selectedDate} onValueChange={(v) => { setSelectedDate(v); setSelectedTimeSlot(""); }}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a data" />
               </SelectTrigger>
               <SelectContent className="bg-background z-50">
-                <SelectItem value="assim_que_possivel">
-                  Entregar assim que possível
-                </SelectItem>
-                {ORDER_TIME_SLOTS.map((slot) => (
-                  <SelectItem key={slot.start} value={slot.label}>
-                    {slot.label}
-                  </SelectItem>
+                {deliveryDates.map((d) => (
+                  <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="space-y-2">
+            <Label>Horário de entrega</Label>
+            <Select value={selectedTimeSlot} onValueChange={setSelectedTimeSlot} disabled={!selectedDate}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder={selectedDate ? "Selecione o horário" : "Selecione a data primeiro"} />
+              </SelectTrigger>
+              <SelectContent className="bg-background z-50">
+                <SelectItem value="assim_que_possivel">Entregar assim que possível</SelectItem>
+                {availableSlots.map((slot) => (
+                  <SelectItem key={slot.start} value={slot.label}>{slot.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -372,12 +424,15 @@ const CheckoutCart = () => {
           
           <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
             <p className="text-xs text-blue-600">
-              Seu pedido ficará em espera até o horário selecionado
+              {selectedTimeSlot && selectedTimeSlot !== "assim_que_possivel"
+                ? `Pedido agendado para ${deliveryDates.find(d => d.value === selectedDate)?.label || selectedDate} - ${selectedTimeSlot}`
+                : "O pedido será processado assim que possível"}
             </p>
           </div>
         </CardContent>
       </Card>
 
+      {/* Payment */}
       <Card>
         <CardHeader>
           <CardTitle className="text-bread-crust">Forma de Pagamento</CardTitle>

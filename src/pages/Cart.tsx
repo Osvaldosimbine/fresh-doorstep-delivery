@@ -1,71 +1,22 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useCart } from '@/contexts/CartContext';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2, Plus, Minus, ShoppingCart, Clock } from 'lucide-react';
-import { ORDER_TIME_SLOTS, isOrderTimeAllowed, getNextAvailableTime } from '@/lib/timeUtils';
+import { Trash2, Plus, Minus, ShoppingCart } from 'lucide-react';
 
 const Cart = () => {
-  const { items, updateQuantity, removeFromCart, getTotal, getTotalSavings, clearCart } = useCart();
-  const { user } = useAuth();
-  const { toast } = useToast();
+  const { items, updateQuantity, removeFromCart, getTotal, getTotalSavings } = useCart();
   const navigate = useNavigate();
-  const [selectedTime, setSelectedTime] = useState('');
-  const [loading, setLoading] = useState(false);
 
   const handleQuantityChange = (itemId: string, newQuantity: number) => {
     if (newQuantity <= 0) {
       removeFromCart(itemId);
     } else {
       updateQuantity(itemId, newQuantity);
-    }
-  };
-
-  const handleCheckout = async () => {
-    if (!user) {
-      navigate('/register');
-      return;
-    }
-
-    if (!selectedTime) {
-      toast({
-        title: "Horário não selecionado",
-        description: "Por favor, selecione um horário para entrega.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      // Simulate order creation
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast({
-        title: "Pedido realizado com sucesso!",
-        description: `Seu pedido foi agendado para ${selectedTime}.`,
-      });
-      
-      clearCart();
-      navigate('/order-confirmation');
-    } catch (error) {
-      toast({
-        title: "Erro ao processar pedido",
-        description: "Tente novamente em alguns minutos.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -90,7 +41,6 @@ const Cart = () => {
 
   const total = getTotal();
   const savings = getTotalSavings();
-  const isTimeAllowed = isOrderTimeAllowed();
 
   return (
     <div className="min-h-screen bg-background">
@@ -189,42 +139,11 @@ const Cart = () => {
                   </div>
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="time-slot">Horário de entrega</Label>
-                  <Select value={selectedTime} onValueChange={setSelectedTime}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um horário" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ORDER_TIME_SLOTS.map((slot) => (
-                        <SelectItem key={slot.start} value={slot.label}>
-                          {slot.label}
-                        </SelectItem>
-                      ))}
-                      {!isTimeAllowed && (
-                        <SelectItem value="next-available">
-                          {getNextAvailableTime()}
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                {!isTimeAllowed && (
-                  <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                    <Clock className="h-4 w-4 text-yellow-600" />
-                    <p className="text-sm text-yellow-700">
-                      Fora do horário de entregas. Seu pedido será processado no próximo horário disponível.
-                    </p>
-                  </div>
-                )}
-                
                 <Button 
-                  onClick={handleCheckout}
-                  disabled={loading || !selectedTime}
-                  className="w-full"
+                  onClick={() => navigate('/fazer-pedido')}
+                  className="w-full bg-bread-golden hover:bg-bread-crust"
                 >
-                  {loading ? 'Processando...' : 'Finalizar Pedido'}
+                  Ir para Checkout
                 </Button>
               </CardContent>
             </Card>
