@@ -39,6 +39,8 @@ export function DashboardMetrics({ padariaId }: DashboardMetricsProps) {
         startDate.setDate(now.getDate() - 7);
       } else if (period === "month") {
         startDate.setMonth(now.getMonth() - 1);
+      } else if (period === "year") {
+        startDate.setFullYear(now.getFullYear() - 1);
       }
 
       // Buscar pedidos
@@ -129,6 +131,7 @@ export function DashboardMetrics({ padariaId }: DashboardMetricsProps) {
             <SelectItem value="day">Hoje</SelectItem>
             <SelectItem value="week">Última Semana</SelectItem>
             <SelectItem value="month">Último Mês</SelectItem>
+            <SelectItem value="year">Último Ano</SelectItem>
           </SelectContent>
         </Select>
       </div>
