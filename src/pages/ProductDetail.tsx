@@ -3,15 +3,13 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Clock, Star, Plus, Minus } from "lucide-react";
+import { MapPin, Star, Plus, Minus, ShoppingCart, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateBulkDiscount, getDiscountTier } from "@/lib/discount";
-import { isOrderTimeAllowed, getNextAvailableTime } from "@/lib/timeUtils";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import LocationSelector from "@/components/LocationSelector";
-import DeliveryAreaChecker from "@/components/DeliveryAreaChecker";
 import { useToast } from "@/hooks/use-toast";
+import { useCart } from "@/contexts/CartContext";
 
 interface Produto {
   id: string;
@@ -33,17 +31,11 @@ const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { addItem } = useCart();
   const [produto, setProduto] = useState<Produto | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
-  const [selectedLocation, setSelectedLocation] = useState<{
-    address: string;
-    coordinates: { lat: number; lng: number };
-  } | null>(null);
-  const [deliveryAllowed, setDeliveryAllowed] = useState(false);
-  const [showLocationSelector, setShowLocationSelector] = useState(false);
-
-  const isTimeAllowed = isOrderTimeAllowed();
+  const [addedToCart, setAddedToCart] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -93,43 +85,19 @@ const ProductDetail = () => {
     setQuantity(prev => Math.max(1, prev + delta));
   };
 
-  const handleLocationSelected = (location: { address: string; coordinates: { lat: number; lng: number }}) => {
-    setSelectedLocation(location);
-    setShowLocationSelector(false);
-  };
-
-  const handleProceedToOrder = () => {
-    if (!selectedLocation) {
-      setShowLocationSelector(true);
-      return;
-    }
-
-    if (!deliveryAllowed) {
-      toast({
-        title: "Área não coberta",
-        description: "Infelizmente não entregamos nesta localização ainda",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!isTimeAllowed) {
-      toast({
-        title: "Fora do horário",
-        description: `Pedidos aceitos apenas nos horários: ${getNextAvailableTime()}`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Navigate to order confirmation with product and location data
-    navigate("/order-confirmation", {
-      state: {
-        produto,
-        quantity,
-        location: selectedLocation,
-        discountInfo: calculateBulkDiscount(produto!.preco, quantity)
-      }
+  const handleAddToCart = () => {
+    if (!produto) return;
+    addItem({
+      id: produto.id,
+      nome_produto: produto.nome_produto,
+      preco: produto.preco,
+      padaria: produto.padarias.nome_padaria,
+      quantidade: quantity,
+    });
+    setAddedToCart(true);
+    toast({
+      title: "Adicionado ao carrinho",
+      description: `${quantity} ${quantity === 1 ? 'unidade' : 'unidades'} de ${produto.nome_produto}`,
     });
   };
 
@@ -142,7 +110,6 @@ const ProductDetail = () => {
             <div className="h-64 bg-muted rounded-lg mb-6"></div>
             <div className="h-8 bg-muted rounded mb-4"></div>
             <div className="h-4 bg-muted rounded mb-2"></div>
-            <div className="h-4 bg-muted rounded mb-4"></div>
           </div>
         </div>
         <Footer />
@@ -270,87 +237,41 @@ const ProductDetail = () => {
               </div>
             </div>
 
-            {/* Time Status */}
-            {!isTimeAllowed && (
-              <div className="flex items-center gap-2 p-3 bg-destructive/10 rounded-lg">
-                <Clock className="h-4 w-4 text-destructive" />
-                <div className="text-sm">
-                  <p className="text-destructive font-medium">Fora do horário de pedidos</p>
-                  <p className="text-muted-foreground">
-                    Próximo horário: {getNextAvailableTime()}
-                  </p>
+            {/* Add to Cart / Go to Checkout */}
+            {!addedToCart ? (
+              <Button
+                onClick={handleAddToCart}
+                className="w-full h-12 text-lg bg-bread-golden hover:bg-bread-crust"
+              >
+                <ShoppingCart className="h-5 w-5 mr-2" />
+                Adicionar ao Carrinho - {(discountInfo.discountedPrice * quantity).toFixed(2)} MT
+              </Button>
+            ) : (
+              <div className="space-y-3">
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-center">
+                  <p className="text-green-700 font-medium">✓ Adicionado ao carrinho!</p>
+                </div>
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => { setAddedToCart(false); setQuantity(1); }}
+                  >
+                    Adicionar mais
+                  </Button>
+                  <Button
+                    className="flex-1 bg-bread-golden hover:bg-bread-crust"
+                    onClick={() => navigate("/fazer-pedido")}
+                  >
+                    Ir para Checkout
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
                 </div>
               </div>
             )}
-
-            {/* Location Selection */}
-            {selectedLocation ? (
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-medium">Local de entrega:</h4>
-                      <p className="text-sm text-muted-foreground">{selectedLocation.address}</p>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowLocationSelector(true)}
-                    >
-                      Alterar
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <Button
-                variant="outline"
-                onClick={() => setShowLocationSelector(true)}
-                className="w-full"
-              >
-                <MapPin className="h-4 w-4 mr-2" />
-                Selecionar local de entrega
-              </Button>
-            )}
-
-            {/* Delivery Area Check */}
-            {selectedLocation && (
-              <DeliveryAreaChecker
-                userLocation={selectedLocation.coordinates}
-                bakeryLocation={{
-                  lat: produto.padarias.coordenadas_lat,
-                  lng: produto.padarias.coordenadas_lng
-                }}
-                onDeliveryStatusChange={setDeliveryAllowed}
-              />
-            )}
-
-            {/* Order Button */}
-            <Button
-              onClick={handleProceedToOrder}
-              disabled={!isTimeAllowed || !selectedLocation || !deliveryAllowed}
-              className="w-full h-12 text-lg bg-bread-golden hover:bg-bread-crust"
-            >
-              {!selectedLocation 
-                ? "Selecione o local de entrega"
-                : !deliveryAllowed
-                  ? "Área não coberta"
-                  : !isTimeAllowed
-                    ? "Fora do horário"
-                    : `Encomendar ${quantity} ${quantity === 1 ? 'pão' : 'pães'} - ${(discountInfo.discountedPrice * quantity).toFixed(2)} MT`
-              }
-            </Button>
           </div>
         </div>
       </div>
-
-      {/* Location Selector Modal */}
-      {showLocationSelector && (
-        <LocationSelector
-          onLocationSelected={handleLocationSelected}
-          onClose={() => setShowLocationSelector(false)}
-        />
-      )}
 
       <Footer />
     </div>

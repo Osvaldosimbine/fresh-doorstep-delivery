@@ -242,8 +242,8 @@ serve(async (req) => {
       );
     }
 
-    // Create order items
-    const orderItems = validatedProducts.map(item => ({
+    // Create order items (exclude padaria_id - not a column in itens_pedido)
+    const orderItems = validatedProducts.map(({ padaria_id, ...item }) => ({
       ...item,
       pedido_id: order.id
     }));
