@@ -92,14 +92,31 @@ const CheckoutCart = () => {
       },
       (error) => {
         setGpsLoading(false);
+        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        const isAndroid = /Android/i.test(navigator.userAgent);
+        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            setGpsError(
-              "Permissão de localização negada. Vá às configurações do navegador > Privacidade > Serviços de localização e permita o acesso para este site."
-            );
+            if (isMobile) {
+              const instructions = isAndroid
+                ? "No Android:\n1. Abra Configurações > Localização > Active o GPS\n2. No navegador: toque nos 3 pontos (⋮) > Configurações > Configurações do site > Localização > Permitir"
+                : isIOS
+                ? "No iPhone/iPad:\n1. Abra Definições > Privacidade > Serviços de localização > Active\n2. Role até ao navegador (Safari/Chrome) > Selecione 'Ao usar o app'"
+                : "Active o GPS nas configurações do seu dispositivo e permita o acesso à localização no navegador.";
+              setGpsError(`Permissão de localização negada.\n\n${instructions}`);
+            } else {
+              setGpsError(
+                "Permissão de localização negada.\n\nNo navegador: clique no ícone 🔒 ao lado do endereço > Permissões > Localização > Permitir. Depois recarregue a página."
+              );
+            }
             break;
           case error.POSITION_UNAVAILABLE:
-            setGpsError("Localização indisponível. Verifique se o GPS está ativado no seu dispositivo.");
+            setGpsError(
+              isMobile
+                ? "Localização indisponível. Verifique se o GPS está activado: Configurações > Localização."
+                : "Localização indisponível. Verifique se o GPS está ativado no seu dispositivo."
+            );
             break;
           case error.TIMEOUT:
             setGpsError("Tempo esgotado. Tente novamente ou selecione manualmente.");
@@ -343,7 +360,7 @@ const CheckoutCart = () => {
           {gpsError && (
             <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
               <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
-              <p className="text-sm text-destructive">{gpsError}</p>
+              <p className="text-sm text-destructive whitespace-pre-line">{gpsError}</p>
             </div>
           )}
 
