@@ -155,8 +155,43 @@ export function OrdersManagement({ padariaId }: OrdersManagementProps) {
       )
       .subscribe();
 
+    // Canal para notificações de entregador atribuído
+    const rotasChannel = supabase
+      .channel('rotas-padaria-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'rotas_otimizadas',
+          filter: `padaria_id=eq.${padariaId}`,
+        },
+        async (payload) => {
+          const newData = payload.new as any;
+          if (newData.status === 'aceita' && newData.entregador_id) {
+            // Buscar nome do entregador
+            const { data: entregador } = await supabase
+              .from('profiles')
+              .select('nome_completo')
+              .eq('id', newData.entregador_id)
+              .single();
+
+            playNotificationSound();
+            toast({
+              title: "🚚 Entregador Atribuído!",
+              description: `${entregador?.nome_completo || 'Um entregador'} vai levar a encomenda.`,
+              duration: 10000,
+            });
+
+            fetchOrders();
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(rotasChannel);
     };
   }, [padariaId]);
 

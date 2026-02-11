@@ -103,7 +103,8 @@ export const PedidosDisponiveis = () => {
     try {
       setAceitando(rotaId);
 
-      const { error } = await supabase
+      // 1. Aceitar a rota
+      const { data: rotaData, error } = await supabase
         .from('rotas_otimizadas')
         .update({
           entregador_id: userProfile.id,
@@ -111,13 +112,30 @@ export const PedidosDisponiveis = () => {
           aceita_em: new Date().toISOString(),
         })
         .eq('id', rotaId)
-        .eq('status', 'pendente'); // Only accept if still pending
+        .eq('status', 'pendente')
+        .select('pedidos_ids')
+        .single();
 
       if (error) throw error;
 
+      // 2. Actualizar todos os pedidos da rota com entregador_id e status 'a_caminho'
+      if (rotaData?.pedidos_ids && rotaData.pedidos_ids.length > 0) {
+        const { error: pedidosError } = await supabase
+          .from('pedidos')
+          .update({
+            entregador_id: userProfile.id,
+            status_pedido: 'a_caminho' as const,
+          })
+          .in('id', rotaData.pedidos_ids);
+
+        if (pedidosError) {
+          console.error('Erro ao actualizar pedidos:', pedidosError);
+        }
+      }
+
       toast({
         title: 'Rota aceita!',
-        description: 'A rota foi atribuída a você. Verifique suas rotas ativas.',
+        description: 'A rota foi atribuída a você. Os pedidos foram actualizados.',
       });
 
       fetchRotasDisponiveis();

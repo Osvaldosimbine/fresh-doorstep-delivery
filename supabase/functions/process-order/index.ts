@@ -208,9 +208,9 @@ serve(async (req) => {
       );
     }
 
-    // All orders start as 'pendente' - bakery changes to 'em_preparacao' when they accept
-    // Orders are accepted 24/7 - no time restrictions
-    const status = 'pendente';
+    // Pedidos são aceites automaticamente - entram directo em preparação
+    // A padaria recebe notificação via Realtime mas não precisa confirmar
+    const status = 'em_preparacao';
 
     // Create order in transaction
     const { data: order, error: orderError } = await supabaseClient
