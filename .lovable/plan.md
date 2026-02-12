@@ -1,78 +1,127 @@
 
 
-# Plano: Integrar Relacao Cliente-Padaria-Entregador
+# Plano: Ambiente Profissional do Entregador
 
-## Estado Actual
+## Resumo
 
-O sistema ja tem muita logica implementada (notificacoes realtime, reports financeiros, gestao de clientes). Os problemas principais sao:
+Transformar o dashboard do entregador num ambiente profissional completo com perfil detalhado, carteira digital, comprovativo de entrega, reporte de problemas e optimizacoes para Mocambique.
 
-1. **Pedidos ficam "pendente" a espera de confirmacao da padaria** - o utilizador quer que sejam aceites automaticamente
-2. **Quando o entregador aceita a rota, o `entregador_id` nao e actualizado nos pedidos** - a padaria nao ve quem vai entregar
-3. **DashboardMetrics so tem dia/semana/mes** - falta opcao anual
-4. **Notificacao na padaria quando entregador aceita** - falta realtime na tabela `rotas_otimizadas`
+## Alteracoes Necessarias
 
-## Alteracoes
+### 1. Base de Dados - Novas Tabelas e Colunas
 
-### 1. Auto-aceitar pedidos (Edge Function `process-order`)
-- Mudar o status inicial do pedido de `'pendente'` para `'em_preparacao'`
-- O pedido entra directamente em preparacao, sem necessidade de confirmacao manual
-- A padaria recebe notificacao via Realtime (ja implementado) mas apenas como alerta informativo
-- O stock ja e descontado automaticamente nesta Edge Function
+**Tabela `profiles` - novos campos:**
+- `foto_url` (text) - URL da foto de perfil
+- `tipo_veiculo` (text) - Bicicleta, Motorizada, etc.
+- `matricula_veiculo` (text) - Matricula para identificacao
+- `rating_medio` (numeric, default 5.0) - Avaliacao media
+- `total_entregas` (integer, default 0) - Contador total
+- `km_acumulados` (numeric, default 0) - Quilometragem total
 
-### 2. Entregador actualiza pedidos ao aceitar rota (`PedidosDisponiveis.tsx`)
-- Quando o entregador aceita uma rota, alem de actualizar `rotas_otimizadas`, deve tambem actualizar o campo `entregador_id` e `status_pedido` para `'a_caminho'` em todos os pedidos da rota
-- Isto garante que a padaria ve imediatamente quem e o entregador no seu dashboard
+**Nova tabela `carteira_entregador`:**
+- `id`, `entregador_id`, `saldo_disponivel` (numeric, default 0), `saldo_pendente` (numeric, default 0), `created_at`, `updated_at`
 
-### 3. Padaria recebe alerta de entregador atribuido (`OrdersManagement.tsx`)
-- Adicionar subscription Realtime na tabela `rotas_otimizadas` filtrada por `padaria_id`
-- Quando uma rota e aceite, mostrar toast informando o nome do entregador
-- O componente ja mostra dados do entregador - so precisa do realtime trigger
+**Nova tabela `pedidos_saque`:**
+- `id`, `entregador_id`, `valor`, `metodo_pagamento` (mpesa/emola), `numero_conta`, `status` (pendente/processado/rejeitado), `created_at`, `processado_em`
 
-### 4. Reports anuais (`DashboardMetrics.tsx`)
-- Adicionar opcao "Ultimo Ano" ao selector de periodo
-- Ja existe no `FinancialReports.tsx` - basta replicar a logica
+**Nova tabela `comprovativo_entrega`:**
+- `id`, `pedido_id`, `entregador_id`, `tipo` (foto/pin), `foto_url`, `pin_confirmado` (boolean), `created_at`
+
+**Nova tabela `problemas_rota`:**
+- `id`, `rota_id`, `entregador_id`, `tipo_problema` (pneu_furado/endereco_nao_encontrado/padaria_sem_stock/outro), `descricao`, `status` (aberto/resolvido), `created_at`
+
+**Nova tabela `avaliacoes_entregador`:**
+- `id`, `entregador_id`, `pedido_id`, `cliente_id`, `nota` (1-5), `comentario`, `created_at`
+
+**Storage bucket `entregador-fotos`** - para fotos de perfil e comprovativos de entrega.
+
+### 2. Perfil do Entregador (Novo Componente)
+
+Novo componente `src/components/entregador/PerfilEntregador.tsx` exibido na aba "Inicio" junto ao toggle de status:
+
+- Foto de perfil com opcao de upload
+- Nome completo, rating com estrelas
+- Tipo de veiculo e matricula (editavel)
+- Estatisticas: total entregas, km acumulados, taxa de pontualidade
+- Indicador visual de nivel (Iniciante / Experiente / Veterano baseado no total de entregas)
+
+### 3. Pedidos e Rotas Melhorados
+
+Melhorar `PedidosDisponiveis.tsx`:
+- Exibir rotas como "bundles" com titulo claro: "Rota Padaria X - 5 Entregas"
+- Lucro estimado em destaque (ja existe, melhorar visual)
+- Mini-mapa placeholder com indicacao de distancia e tempo
+- Informacao resumida dos destinos (ja existe, melhorar layout)
+
+### 4. Carteira Digital (Nova Aba)
+
+Novo componente `src/components/entregador/CarteiraDigital.tsx`:
+
+- Saldo disponivel em destaque grande
+- Saldo pendente (entregas ainda nao confirmadas)
+- Botao "Solicitar Pagamento" que abre dialog para escolher M-Pesa ou e-Mola
+- Inserir numero de conta e valor
+- Historico de saques com status
+- Limite minimo para saque (ex: 100 MT)
+
+### 5. Comprovativo de Entrega Digital
+
+Modificar `ListaParagens.tsx` - ao marcar como entregue:
+- Dialog com duas opcoes: "Tirar Foto" ou "PIN do Cliente"
+- Opcao foto: usa `input type="file" capture="environment"` para camera
+- Opcao PIN: campo de 4 digitos que o cliente recebe (gerado e guardado no pedido)
+- So marca como entregue apos comprovativo
+
+### 6. Botao "Problemas na Rota"
+
+Novo componente `src/components/entregador/ReportarProblema.tsx`:
+- Exibido nas Rotas Ativas
+- Opcoes rapidas: "Pneu furado", "Endereco nao encontrado", "Padaria sem stock", "Outro"
+- Campo de descricao opcional
+- Alerta o sistema (insere na tabela `problemas_rota`)
+- Toast de confirmacao
+
+### 7. Reorganizar Dashboard
+
+Reorganizar `EntregadorDashboard.tsx` com 6 abas:
+1. **Inicio** - Perfil + Status Toggle
+2. **Disponiveis** - Pedidos/Rotas marketplace
+3. **Rotas Ativas** - Rota actual + lista paragens + reportar problema
+4. **Carteira** - Saldo + solicitar pagamento
+5. **Ganhos** - Metricas e graficos
+6. **Historico** - Viagens concluidas
 
 ## Detalhes Tecnicos
 
-### Ficheiro 1: `supabase/functions/process-order/index.ts`
-- Linha onde define `const status = 'pendente'` -> mudar para `const status = 'em_preparacao'`
-- Uma unica linha de alteracao
-
-### Ficheiro 2: `src/components/entregador/PedidosDisponiveis.tsx`
-- Na funcao `handleAceitarRota`, apos actualizar `rotas_otimizadas`, adicionar:
-  - Buscar os `pedidos_ids` da rota
-  - Actualizar cada pedido com `entregador_id` e `status_pedido = 'a_caminho'`
-
-### Ficheiro 3: `src/components/padaria/OrdersManagement.tsx`
-- Adicionar channel Realtime na tabela `rotas_otimizadas` para detectar quando `status` muda para `'aceita'`
-- Ao detectar, mostrar toast com info do entregador e refrescar lista de pedidos
-
-### Ficheiro 4: `src/components/padaria/DashboardMetrics.tsx`
-- Adicionar `<SelectItem value="year">Ultimo Ano</SelectItem>` ao selector
-- Adicionar logica `if (period === "year") startDate.setFullYear(now.getFullYear() - 1)` no calculo de datas
-
-### Fluxo Integrado Final
+### Migracao SQL
 ```text
-Cliente faz pedido
-    |
-    v
-process-order: cria pedido com status 'em_preparacao' + desconta stock
-    |
-    v
-Padaria recebe notificacao Realtime (som + toast "Novo Pedido!")
-Dashboard actualiza metricas e lista de pedidos automaticamente
-    |
-    v
-processar-pedidos-prontos (cron): detecta pedidos prontos -> cria rota
-    |
-    v
-Entregador ve rota disponivel com lucro estimado
-    |
-    v
-Entregador aceita rota -> actualiza pedidos com entregador_id + status 'a_caminho'
-    |
-    v
-Padaria recebe notificacao "Entregador X vai levar a encomenda"
-Cliente ve tracking actualizado com info do entregador
+- ALTER TABLE profiles ADD COLUMN foto_url, tipo_veiculo, matricula_veiculo, rating_medio, total_entregas, km_acumulados
+- CREATE TABLE carteira_entregador com RLS (entregador ve so a sua)
+- CREATE TABLE pedidos_saque com RLS (entregador ve/cria os seus)
+- CREATE TABLE comprovativo_entrega com RLS (entregador cria, cliente/padaria ve)
+- CREATE TABLE problemas_rota com RLS (entregador cria/ve os seus, admin ve todos)
+- CREATE TABLE avaliacoes_entregador com RLS (cliente cria, entregador ve as suas)
+- CREATE storage bucket entregador-fotos (public)
 ```
+
+### Ficheiros Novos
+- `src/components/entregador/PerfilEntregador.tsx`
+- `src/components/entregador/CarteiraDigital.tsx`
+- `src/components/entregador/ReportarProblema.tsx`
+- `src/components/entregador/ComprovativoEntrega.tsx`
+
+### Ficheiros Modificados
+- `src/pages/EntregadorDashboard.tsx` - nova aba Carteira + perfil no inicio
+- `src/components/entregador/ListaParagens.tsx` - integrar comprovativo antes de marcar entregue
+- `src/components/entregador/PedidosDisponiveis.tsx` - melhorar visual dos bundles
+- `src/components/entregador/StatusToggle.tsx` - integrar com perfil
+
+### Nota sobre Localizacao Live e Geofencing
+A localizacao em tempo real (partilha com admin/cliente) e o auto-check-in por geofencing requerem um servico de background tracking que funciona melhor com Capacitor (app nativa). No browser, podemos implementar:
+- Actualizacao periodica da posicao enquanto o turno esta activo (via `setInterval` + `watchPosition`)
+- Deteccao de proximidade ao endereco (calcular distancia entre coordenadas)
+- Mas o geofencing automatico real so funciona fiavel numa app nativa
+
+### Nota sobre Modo Economia de Dados
+O mapa actual usa Google Maps via link externo (nao carrega mapa inline). Manter esta abordagem e leve. Para futuro, considerar Leaflet com tiles offline via service worker.
 
