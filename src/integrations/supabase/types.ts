@@ -47,6 +47,138 @@ export type Database = {
         }
         Relationships: []
       }
+      avaliacoes_entregador: {
+        Row: {
+          cliente_id: string
+          comentario: string | null
+          created_at: string
+          entregador_id: string
+          id: string
+          nota: number
+          pedido_id: string
+        }
+        Insert: {
+          cliente_id: string
+          comentario?: string | null
+          created_at?: string
+          entregador_id: string
+          id?: string
+          nota: number
+          pedido_id: string
+        }
+        Update: {
+          cliente_id?: string
+          comentario?: string | null
+          created_at?: string
+          entregador_id?: string
+          id?: string
+          nota?: number
+          pedido_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "avaliacoes_entregador_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "avaliacoes_entregador_entregador_id_fkey"
+            columns: ["entregador_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "avaliacoes_entregador_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      carteira_entregador: {
+        Row: {
+          created_at: string
+          entregador_id: string
+          id: string
+          saldo_disponivel: number
+          saldo_pendente: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          entregador_id: string
+          id?: string
+          saldo_disponivel?: number
+          saldo_pendente?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          entregador_id?: string
+          id?: string
+          saldo_disponivel?: number
+          saldo_pendente?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "carteira_entregador_entregador_id_fkey"
+            columns: ["entregador_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comprovativo_entrega: {
+        Row: {
+          created_at: string
+          entregador_id: string
+          foto_url: string | null
+          id: string
+          pedido_id: string
+          pin_confirmado: boolean | null
+          tipo: string
+        }
+        Insert: {
+          created_at?: string
+          entregador_id: string
+          foto_url?: string | null
+          id?: string
+          pedido_id: string
+          pin_confirmado?: boolean | null
+          tipo: string
+        }
+        Update: {
+          created_at?: string
+          entregador_id?: string
+          foto_url?: string | null
+          id?: string
+          pedido_id?: string
+          pin_confirmado?: boolean | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comprovativo_entrega_entregador_id_fkey"
+            columns: ["entregador_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comprovativo_entrega_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entregador_status: {
         Row: {
           coordenadas_lat: number | null
@@ -381,6 +513,92 @@ export type Database = {
           },
         ]
       }
+      pedidos_saque: {
+        Row: {
+          created_at: string
+          entregador_id: string
+          id: string
+          metodo_pagamento: string
+          numero_conta: string
+          processado_em: string | null
+          status: string
+          valor: number
+        }
+        Insert: {
+          created_at?: string
+          entregador_id: string
+          id?: string
+          metodo_pagamento: string
+          numero_conta: string
+          processado_em?: string | null
+          status?: string
+          valor: number
+        }
+        Update: {
+          created_at?: string
+          entregador_id?: string
+          id?: string
+          metodo_pagamento?: string
+          numero_conta?: string
+          processado_em?: string | null
+          status?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedidos_saque_entregador_id_fkey"
+            columns: ["entregador_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      problemas_rota: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          entregador_id: string
+          id: string
+          rota_id: string
+          status: string
+          tipo_problema: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          entregador_id: string
+          id?: string
+          rota_id: string
+          status?: string
+          tipo_problema: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          entregador_id?: string
+          id?: string
+          rota_id?: string
+          status?: string
+          tipo_problema?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problemas_rota_entregador_id_fkey"
+            columns: ["entregador_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "problemas_rota_rota_id_fkey"
+            columns: ["rota_id"]
+            isOneToOne: false
+            referencedRelation: "rotas_otimizadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       produtos: {
         Row: {
           created_at: string
@@ -434,14 +652,20 @@ export type Database = {
           documento_url: string | null
           email: string
           endereco: string | null
+          foto_url: string | null
           id: string
+          km_acumulados: number | null
           localizacao: string | null
+          matricula_veiculo: string | null
           nome_completo: string
           numero_documento: string | null
+          rating_medio: number | null
           role: string | null
           status_cadastro: Database["public"]["Enums"]["status_cadastro"]
           telefone: string
           tipo_usuario: Database["public"]["Enums"]["tipo_usuario"]
+          tipo_veiculo: string | null
+          total_entregas: number | null
           updated_at: string
           user_id: string
         }
@@ -450,14 +674,20 @@ export type Database = {
           documento_url?: string | null
           email: string
           endereco?: string | null
+          foto_url?: string | null
           id?: string
+          km_acumulados?: number | null
           localizacao?: string | null
+          matricula_veiculo?: string | null
           nome_completo: string
           numero_documento?: string | null
+          rating_medio?: number | null
           role?: string | null
           status_cadastro?: Database["public"]["Enums"]["status_cadastro"]
           telefone: string
           tipo_usuario?: Database["public"]["Enums"]["tipo_usuario"]
+          tipo_veiculo?: string | null
+          total_entregas?: number | null
           updated_at?: string
           user_id: string
         }
@@ -466,14 +696,20 @@ export type Database = {
           documento_url?: string | null
           email?: string
           endereco?: string | null
+          foto_url?: string | null
           id?: string
+          km_acumulados?: number | null
           localizacao?: string | null
+          matricula_veiculo?: string | null
           nome_completo?: string
           numero_documento?: string | null
+          rating_medio?: number | null
           role?: string | null
           status_cadastro?: Database["public"]["Enums"]["status_cadastro"]
           telefone?: string
           tipo_usuario?: Database["public"]["Enums"]["tipo_usuario"]
+          tipo_veiculo?: string | null
+          total_entregas?: number | null
           updated_at?: string
           user_id?: string
         }
