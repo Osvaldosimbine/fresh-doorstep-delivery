@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { MapaRota } from './MapaRota';
 import { ListaParagens } from './ListaParagens';
 import { NotificacaoRota } from './NotificacaoRota';
+import { ReportarProblema } from './ReportarProblema';
 import { Card } from '@/components/ui/card';
 import { AlertCircle } from 'lucide-react';
 
@@ -17,14 +18,12 @@ export const RotasAtivas = () => {
     queryKey: ['rotas-ativas', userProfile?.id],
     queryFn: async () => {
       if (!userProfile?.id) return [];
-      
       const { data, error } = await supabase
         .from('rotas_otimizadas')
         .select('*, padarias(nome_padaria, endereco)')
         .eq('entregador_id', userProfile.id)
         .in('status', ['aceita', 'em_andamento'])
         .order('created_at', { ascending: false });
-
       if (error) throw error;
       return data || [];
     },
@@ -33,47 +32,19 @@ export const RotasAtivas = () => {
 
   useEffect(() => {
     if (!userProfile?.id) return;
-
     const channel = supabase
       .channel('rotas-entregador')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'rotas_otimizadas',
-          filter: `entregador_id=eq.${userProfile.id}`,
-        },
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'rotas_otimizadas', filter: `entregador_id=eq.${userProfile.id}` },
         async (payload) => {
-          const { data } = await supabase
-            .from('rotas_otimizadas')
-            .select('*, padarias(nome_padaria, endereco)')
-            .eq('id', payload.new.id)
-            .single();
-          
-          if (data) {
-            setNotificacaoRota(data);
-            setShowNotificacao(true);
-          }
+          const { data } = await supabase.from('rotas_otimizadas').select('*, padarias(nome_padaria, endereco)').eq('id', payload.new.id).single();
+          if (data) { setNotificacaoRota(data); setShowNotificacao(true); }
         }
       )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'rotas_otimizadas',
-          filter: `entregador_id=eq.${userProfile.id}`,
-        },
-        () => {
-          refetch();
-        }
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rotas_otimizadas', filter: `entregador_id=eq.${userProfile.id}` },
+        () => { refetch(); }
       )
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [userProfile?.id, refetch]);
 
   if (!rotasAtivas || rotasAtivas.length === 0) {
@@ -83,9 +54,7 @@ export const RotasAtivas = () => {
           <AlertCircle size={48} className="text-muted-foreground" />
           <div>
             <h3 className="text-xl font-semibold mb-2">Nenhuma rota ativa</h3>
-            <p className="text-muted-foreground">
-              Quando você aceitar uma rota, ela aparecerá aqui
-            </p>
+            <p className="text-muted-foreground">Quando você aceitar uma rota, ela aparecerá aqui</p>
           </div>
         </div>
       </Card>
@@ -97,16 +66,13 @@ export const RotasAtivas = () => {
   return (
     <>
       <div className="space-y-6">
+        <div className="flex justify-end">
+          <ReportarProblema rotaId={rotaAtual.id} />
+        </div>
         <MapaRota rota={rotaAtual} />
         <ListaParagens rota={rotaAtual} onUpdate={refetch} />
       </div>
-
-      <NotificacaoRota
-        rota={notificacaoRota}
-        open={showNotificacao}
-        onOpenChange={setShowNotificacao}
-        onAceitar={refetch}
-      />
+      <NotificacaoRota rota={notificacaoRota} open={showNotificacao} onOpenChange={setShowNotificacao} onAceitar={refetch} />
     </>
   );
 };
