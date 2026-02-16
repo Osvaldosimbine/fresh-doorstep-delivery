@@ -1,127 +1,52 @@
 
 
-# Plano: Ambiente Profissional do Entregador
+# Plano: Navegacao Dedicada para o Entregador
 
-## Resumo
+## Problema
 
-Transformar o dashboard do entregador num ambiente profissional completo com perfil detalhado, carteira digital, comprovativo de entrega, reporte de problemas e optimizacoes para Mocambique.
+O Header e o MobileNavigation tratam o entregador como um utilizador normal, mostrando links irrelevantes: "Pagina Principal", "Como Funciona", "Produtos", "Registro" e carrinho de compras. O entregador so precisa de ver o seu dashboard e informacoes de entregas.
 
-## Alteracoes Necessarias
+## Alteracoes
 
-### 1. Base de Dados - Novas Tabelas e Colunas
+### 1. Header.tsx - Navegacao por Role
 
-**Tabela `profiles` - novos campos:**
-- `foto_url` (text) - URL da foto de perfil
-- `tipo_veiculo` (text) - Bicicleta, Motorizada, etc.
-- `matricula_veiculo` (text) - Matricula para identificacao
-- `rating_medio` (numeric, default 5.0) - Avaliacao media
-- `total_entregas` (integer, default 0) - Contador total
-- `km_acumulados` (numeric, default 0) - Quilometragem total
+Actualmente so distingue `padaria` dos restantes. Adicionar condicao para `entregador`:
 
-**Nova tabela `carteira_entregador`:**
-- `id`, `entregador_id`, `saldo_disponivel` (numeric, default 0), `saldo_pendente` (numeric, default 0), `created_at`, `updated_at`
+- **Role `entregador`**: Mostrar apenas "Meu Dashboard" (link para `/entregador/dashboard`)
+- **Role `padaria`**: Manter "Meu Painel" (como esta)
+- **Outros**: Manter navegacao actual (Pagina Principal, Como Funciona, Produtos, etc.)
+- **Esconder carrinho** para entregadores (ja esconde para padaria, adicionar entregador)
 
-**Nova tabela `pedidos_saque`:**
-- `id`, `entregador_id`, `valor`, `metodo_pagamento` (mpesa/emola), `numero_conta`, `status` (pendente/processado/rejeitado), `created_at`, `processado_em`
+### 2. MobileNavigation.tsx - Menu Mobile por Role
 
-**Nova tabela `comprovativo_entrega`:**
-- `id`, `pedido_id`, `entregador_id`, `tipo` (foto/pin), `foto_url`, `pin_confirmado` (boolean), `created_at`
+O menu mobile mostra sempre os mesmos items. Alterar para verificar o role:
 
-**Nova tabela `problemas_rota`:**
-- `id`, `rota_id`, `entregador_id`, `tipo_problema` (pneu_furado/endereco_nao_encontrado/padaria_sem_stock/outro), `descricao`, `status` (aberto/resolvido), `created_at`
+- **Role `entregador`**: Mostrar apenas "Dashboard" com link para `/entregador/dashboard`
+- **Esconder carrinho** no menu mobile para entregadores
+- **Outros roles**: Manter menu actual
 
-**Nova tabela `avaliacoes_entregador`:**
-- `id`, `entregador_id`, `pedido_id`, `cliente_id`, `nota` (1-5), `comentario`, `created_at`
+### 3. Redireccionamento na Raiz
 
-**Storage bucket `entregador-fotos`** - para fotos de perfil e comprovativos de entrega.
-
-### 2. Perfil do Entregador (Novo Componente)
-
-Novo componente `src/components/entregador/PerfilEntregador.tsx` exibido na aba "Inicio" junto ao toggle de status:
-
-- Foto de perfil com opcao de upload
-- Nome completo, rating com estrelas
-- Tipo de veiculo e matricula (editavel)
-- Estatisticas: total entregas, km acumulados, taxa de pontualidade
-- Indicador visual de nivel (Iniciante / Experiente / Veterano baseado no total de entregas)
-
-### 3. Pedidos e Rotas Melhorados
-
-Melhorar `PedidosDisponiveis.tsx`:
-- Exibir rotas como "bundles" com titulo claro: "Rota Padaria X - 5 Entregas"
-- Lucro estimado em destaque (ja existe, melhorar visual)
-- Mini-mapa placeholder com indicacao de distancia e tempo
-- Informacao resumida dos destinos (ja existe, melhorar layout)
-
-### 4. Carteira Digital (Nova Aba)
-
-Novo componente `src/components/entregador/CarteiraDigital.tsx`:
-
-- Saldo disponivel em destaque grande
-- Saldo pendente (entregas ainda nao confirmadas)
-- Botao "Solicitar Pagamento" que abre dialog para escolher M-Pesa ou e-Mola
-- Inserir numero de conta e valor
-- Historico de saques com status
-- Limite minimo para saque (ex: 100 MT)
-
-### 5. Comprovativo de Entrega Digital
-
-Modificar `ListaParagens.tsx` - ao marcar como entregue:
-- Dialog com duas opcoes: "Tirar Foto" ou "PIN do Cliente"
-- Opcao foto: usa `input type="file" capture="environment"` para camera
-- Opcao PIN: campo de 4 digitos que o cliente recebe (gerado e guardado no pedido)
-- So marca como entregue apos comprovativo
-
-### 6. Botao "Problemas na Rota"
-
-Novo componente `src/components/entregador/ReportarProblema.tsx`:
-- Exibido nas Rotas Ativas
-- Opcoes rapidas: "Pneu furado", "Endereco nao encontrado", "Padaria sem stock", "Outro"
-- Campo de descricao opcional
-- Alerta o sistema (insere na tabela `problemas_rota`)
-- Toast de confirmacao
-
-### 7. Reorganizar Dashboard
-
-Reorganizar `EntregadorDashboard.tsx` com 6 abas:
-1. **Inicio** - Perfil + Status Toggle
-2. **Disponiveis** - Pedidos/Rotas marketplace
-3. **Rotas Ativas** - Rota actual + lista paragens + reportar problema
-4. **Carteira** - Saldo + solicitar pagamento
-5. **Ganhos** - Metricas e graficos
-6. **Historico** - Viagens concluidas
+Actualmente quando o entregador acede a `/`, ve a pagina principal com produtos. O `RoleBasedRedirect.tsx` ja existe mas nao esta a ser usado na rota `/`. Verificar se o entregador logado deve ser redireccionado automaticamente para `/entregador/dashboard` ao aceder a `/`.
 
 ## Detalhes Tecnicos
 
-### Migracao SQL
-```text
-- ALTER TABLE profiles ADD COLUMN foto_url, tipo_veiculo, matricula_veiculo, rating_medio, total_entregas, km_acumulados
-- CREATE TABLE carteira_entregador com RLS (entregador ve so a sua)
-- CREATE TABLE pedidos_saque com RLS (entregador ve/cria os seus)
-- CREATE TABLE comprovativo_entrega com RLS (entregador cria, cliente/padaria ve)
-- CREATE TABLE problemas_rota com RLS (entregador cria/ve os seus, admin ve todos)
-- CREATE TABLE avaliacoes_entregador com RLS (cliente cria, entregador ve as suas)
-- CREATE storage bucket entregador-fotos (public)
-```
+### Header.tsx
+- Linha 59-83: Onde esta o `if (role === 'padaria')`, adicionar `else if (role === 'entregador')` com link "Meu Dashboard"
+- Linha 89: Onde esconde o carrinho para padaria, adicionar `&& role !== 'entregador'`
 
-### Ficheiros Novos
-- `src/components/entregador/PerfilEntregador.tsx`
-- `src/components/entregador/CarteiraDigital.tsx`
-- `src/components/entregador/ReportarProblema.tsx`
-- `src/components/entregador/ComprovativoEntrega.tsx`
+### MobileNavigation.tsx
+- Linha 54-60: Condicionar `navItems` baseado no `userProfile?.role`
+- Se `entregador`, usar array reduzido com apenas o dashboard
+- Esconder carrinho badge para entregador
 
-### Ficheiros Modificados
-- `src/pages/EntregadorDashboard.tsx` - nova aba Carteira + perfil no inicio
-- `src/components/entregador/ListaParagens.tsx` - integrar comprovativo antes de marcar entregue
-- `src/components/entregador/PedidosDisponiveis.tsx` - melhorar visual dos bundles
-- `src/components/entregador/StatusToggle.tsx` - integrar com perfil
+### Index.tsx ou ProtectedRoute
+- Adicionar verificacao: se o utilizador logado e `entregador`, redirecionar de `/` para `/entregador/dashboard`
 
-### Nota sobre Localizacao Live e Geofencing
-A localizacao em tempo real (partilha com admin/cliente) e o auto-check-in por geofencing requerem um servico de background tracking que funciona melhor com Capacitor (app nativa). No browser, podemos implementar:
-- Actualizacao periodica da posicao enquanto o turno esta activo (via `setInterval` + `watchPosition`)
-- Deteccao de proximidade ao endereco (calcular distancia entre coordenadas)
-- Mas o geofencing automatico real so funciona fiavel numa app nativa
+## Resultado
 
-### Nota sobre Modo Economia de Dados
-O mapa actual usa Google Maps via link externo (nao carrega mapa inline). Manter esta abordagem e leve. Para futuro, considerar Leaflet com tiles offline via service worker.
+Entregador logado vera:
+- Header com logo + "Meu Dashboard" + botao Sair
+- Sem carrinho, sem produtos, sem "Como Funciona", sem "Registro"
+- Redireccionado automaticamente para o dashboard ao aceder a `/`
 
