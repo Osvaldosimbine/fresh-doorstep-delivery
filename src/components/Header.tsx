@@ -60,6 +60,10 @@ const Header = () => {
             <Link to="/padaria/dashboard" className="text-sm font-medium hover:text-primary transition-colors">
               Meu Painel
             </Link>
+          ) : userProfile?.role === 'entregador' ? (
+            <Link to="/entregador/dashboard" className="text-sm font-medium hover:text-primary transition-colors">
+              Meu Dashboard
+            </Link>
           ) : (
             <>
               <Link to="/" className="text-sm font-medium hover:text-primary transition-colors">
@@ -86,7 +90,7 @@ const Header = () => {
         {/* Actions */}
         <div className="flex items-center gap-2">
           {/* Cart Icon - only for non-bakery users */}
-          {userProfile?.role !== 'padaria' && (
+          {userProfile?.role !== 'padaria' && userProfile?.role !== 'entregador' && (
             <Link to="/cart" className="relative">
               <Button variant="ghost" size="icon">
                 <ShoppingCart className="h-5 w-5" />
