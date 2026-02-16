@@ -28,7 +28,7 @@ const MobileNavigation = () => {
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, userProfile, signOut } = useAuth();
   const { items } = useCart();
   const { toast } = useToast();
 
@@ -51,13 +51,19 @@ const MobileNavigation = () => {
     }
   };
 
-  const navItems = [
-    { to: "/", label: "Página Principal", icon: Home },
-    { to: "/como-funciona", label: "Como Funciona", icon: Info },
-    { to: "/products", label: "Produtos", icon: Package },
-    ...(user ? [{ to: "/pedidos", label: "Pedidos", icon: ShoppingBag }] : []),
-    { to: "/cart", label: "Carrinho", icon: ShoppingCart, badge: cartItemsCount },
-  ];
+  const isEntregador = userProfile?.role === 'entregador';
+
+  const navItems = isEntregador
+    ? [
+        { to: "/entregador/dashboard", label: "Meu Dashboard", icon: Home },
+      ]
+    : [
+        { to: "/", label: "Página Principal", icon: Home },
+        { to: "/como-funciona", label: "Como Funciona", icon: Info },
+        { to: "/products", label: "Produtos", icon: Package },
+        ...(user ? [{ to: "/pedidos", label: "Pedidos", icon: ShoppingBag }] : []),
+        { to: "/cart", label: "Carrinho", icon: ShoppingCart, badge: cartItemsCount },
+      ];
 
   const handleNavClick = (to: string) => {
     setOpen(false);
