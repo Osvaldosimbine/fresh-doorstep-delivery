@@ -30,18 +30,23 @@ export const NotificacaoRota = ({ rota, open, onOpenChange, onAceitar }: Notific
       return;
     }
 
+    let mounted = true;
+
     const interval = setInterval(() => {
       setTempoRestante((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
-          handleRecusar();
+          if (mounted) handleRecusar();
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
 
-    return () => clearInterval(interval);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
   }, [open]);
 
   const handleAceitar = async () => {

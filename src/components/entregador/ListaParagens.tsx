@@ -71,8 +71,16 @@ export const ListaParagens = ({ rota, onUpdate }: ListaParagensProps) => {
 
       if (error) throw error;
 
-      const todosEntregues = rota.pedidos_ids.every((id: string) => id === pedidoParaComprovar);
-      
+      // Check if ALL orders in this route are now delivered
+      const { data: pedidosRota } = await supabase
+        .from('pedidos')
+        .select('id, status_pedido')
+        .in('id', rota.pedidos_ids);
+
+      const todosEntregues = pedidosRota?.every(
+        (p: any) => p.status_pedido === 'entregue' || p.id === pedidoParaComprovar
+      );
+
       if (todosEntregues) {
         await supabase
           .from('rotas_otimizadas')
