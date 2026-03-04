@@ -56,10 +56,20 @@ const Register = () => {
   useEffect(() => {
     const verify = searchParams.get('verify');
     const email = searchParams.get('email');
+    const tab = searchParams.get('tab');
+    const tipo = searchParams.get('tipo');
     
     if (verify === 'true' && email) {
       setShowVerification(true);
       setUserEmail(email);
+    }
+    
+    if (tab === 'register') {
+      setActiveTab('register');
+    }
+    
+    if (tipo && ['cliente', 'padaria', 'entregador'].includes(tipo)) {
+      registerForm.setValue('tipo_usuario', tipo as 'cliente' | 'padaria' | 'entregador');
     }
   }, [searchParams]);
 
