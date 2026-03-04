@@ -1,31 +1,7 @@
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import LocationSelect from "@/components/LocationSelect";
-import { MAPUTO_LOCATIONS } from "@/constants/locations";
-
-const bakerySchema = z.object({
-  nome_padaria: z.string().min(2, "Nome da padaria deve ter pelo menos 2 caracteres"),
-  endereco: z.string().min(5, "Endereço deve ter pelo menos 5 caracteres"),
-  telefone: z.string()
-    .min(9, "Telefone deve ter pelo menos 9 dígitos")
-    .regex(/^(\+?258)?[8][0-9]{8}$/, "Formato inválido. Ex: 843123456"),
-  email: z.string()
-    .min(1, "Email é obrigatório")
-    .email("Email inválido"),
-  localizacao: z.string().min(1, "Selecione uma localização"),
-  horario_funcionamento: z.string().optional(),
-});
-
-type BakeryFormData = z.infer<typeof bakerySchema>;
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useState } from "react";
 
 interface BakeryRegistrationFormProps {
   children?: React.ReactNode;
@@ -34,219 +10,28 @@ interface BakeryRegistrationFormProps {
 
 export default function BakeryRegistrationForm({ children, inline = false }: BakeryRegistrationFormProps) {
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
+  const navigate = useNavigate();
 
-  const form = useForm<BakeryFormData>({
-    resolver: zodResolver(bakerySchema),
-    defaultValues: {
-      nome_padaria: "",
-      endereco: "",
-      telefone: "",
-      email: "",
-      localizacao: "",
-      horario_funcionamento: "",
-    },
-  });
-
-  const onSubmit = async (values: BakeryFormData) => {
-    setLoading(true);
-    try {
-      // Create a temporary password
-      const tempPassword = `Temp${Math.random().toString(36).slice(-8)}!`;
-      
-      // Sign up the user with Supabase Auth - metadata will trigger automatic profile creation
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: values.email,
-        password: tempPassword,
-        options: {
-          data: {
-            nome_completo: values.nome_padaria,
-            telefone: values.telefone,
-            tipo_usuario: 'padaria',
-            localizacao: values.localizacao,
-            endereco: values.endereco,
-          },
-          emailRedirectTo: `${window.location.origin}/`
-        }
-      });
-
-      if (authError) {
-        // Check for rate limit error
-        if (authError.message.includes('over_email_send_rate_limit')) {
-          throw new Error('Você tentou cadastrar muitas vezes. Por favor, aguarde 60 segundos e tente novamente.');
-        }
-        throw authError;
-      }
-
-      if (!authData.user) {
-        throw new Error('Erro ao criar usuário');
-      }
-
-      // Now create the bakery record with user_id
-      const location = MAPUTO_LOCATIONS.find(loc => loc.value === values.localizacao);
-      
-      const { error } = await supabase
-        .from("padarias")
-        .insert([
-          {
-            user_id: authData.user.id,
-            nome_padaria: values.nome_padaria,
-            endereco: values.endereco,
-            localizacao: values.localizacao,
-            coordenadas_lat: location?.coordinates.lat,
-            coordenadas_lng: location?.coordinates.lng,
-            horario_funcionamento: values.horario_funcionamento ? 
-              { info: values.horario_funcionamento } : null,
-          }
-        ]);
-
-      if (error) throw error;
-
-      toast({
-        title: "Padaria cadastrada com sucesso!",
-        description: "Verifique seu email para confirmar o cadastro.",
-      });
-      form.reset();
-      setOpen(false);
-      
-      // Redirect to verification page
-      window.location.href = `/register?email=${encodeURIComponent(values.email)}&verify=true`;
-    } catch (error: any) {
-      console.error("Erro ao cadastrar padaria:", error);
-      toast({
-        title: "Erro ao cadastrar padaria",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+  const handleRedirect = () => {
+    navigate('/register?tab=register&tipo=padaria');
   };
 
-  const formContent = (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="nome_padaria"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nome da Padaria *</FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="Ex: Padaria Central"
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="endereco"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Endereço Completo *</FormLabel>
-              <FormControl>
-                <Textarea 
-                  placeholder="Rua, número, bairro, cidade"
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <LocationSelect
-          control={form.control}
-          name="localizacao"
-          label="Localização *"
-          placeholder="Selecione a área da padaria"
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="telefone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Telefone *</FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="843123456"
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email *</FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="padaria@exemplo.com"
-                    type="email"
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <FormField
-          control={form.control}
-          name="horario_funcionamento"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Horário de Funcionamento</FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="Ex: Segunda a Sábado: 6h às 18h"
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="flex gap-3 pt-4">
-          {!inline && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-              className="flex-1"
-            >
-              Cancelar
-            </Button>
-          )}
-          <Button
-            type="submit"
-            disabled={loading}
-            className="flex-1 bg-gradient-primary hover:scale-105 transition-transform"
-          >
-            {loading ? "Cadastrando..." : "Cadastrar Padaria"}
-          </Button>
-        </div>
-      </form>
-    </Form>
+  const content = (
+    <div className="space-y-4 text-center">
+      <p className="text-muted-foreground">
+        Cadastre sua padaria e comece a vender para toda a cidade.
+      </p>
+      <Button 
+        onClick={handleRedirect} 
+        className="w-full bg-gradient-primary hover:scale-105 transition-transform"
+      >
+        Cadastrar Padaria
+      </Button>
+    </div>
   );
 
   if (inline) {
-    return formContent;
+    return content;
   }
 
   return (
@@ -260,8 +45,7 @@ export default function BakeryRegistrationForm({ children, inline = false }: Bak
             Cadastre sua Padaria
           </DialogTitle>
         </DialogHeader>
-        
-        {formContent}
+        {content}
       </DialogContent>
     </Dialog>
   );
