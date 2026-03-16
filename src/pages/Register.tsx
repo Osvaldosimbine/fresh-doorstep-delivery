@@ -32,8 +32,8 @@ const registerSchema = z.object({
   telefone: z.string()
     .min(9, 'Telefone deve ter pelo menos 9 dígitos')
     .regex(/^(\+?258)?[8][0-9]{8}$/, 'Formato inválido. Ex: 823456789 ou +258823456789'),
-  tipo_usuario: z.enum(['cliente', 'padaria', 'entregador'] as const, {
-    required_error: 'Selecione o tipo de usuário',
+  tipo_usuario: z.union([z.literal('cliente'), z.literal('padaria'), z.literal('entregador')], {
+    errorMap: () => ({ message: 'Selecione o tipo de usuário' }),
   }),
   localizacao: z.string().min(1, 'Selecione a sua localização'),
   endereco: z.string()
