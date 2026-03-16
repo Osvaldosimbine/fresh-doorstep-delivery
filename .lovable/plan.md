@@ -1,96 +1,52 @@
 
-# Plano: Pedidos por Distancia + Correccao de Erros
 
-## 1. Pedidos Disponiveis com Filtro por Distancia
+## Diagnosis
 
-### Problema Actual
-O componente `PedidosDisponiveis.tsx` mostra todas as rotas pendentes sem considerar a distancia entre o entregador e a padaria. O entregador nao tem forma de distinguir rotas proximas de rotas distantes.
+The auth logs reveal the **root cause** clearly:
 
-### Solucao
-Adicionar duas sub-abas dentro da aba "Disponiveis":
-- **"Proximos"** (default) - mostra apenas rotas dentro de um raio configuravel (ex: 10km) da posicao actual do entregador
-- **"Todos"** - mostra todas as rotas disponiveis, incluindo as que estao fora do alcance
+1. There is a **Send Email Auth Hook** still active in your Supabase dashboard, pointing to the `send-verification-email` Edge Function
+2. This function uses **Resend** with `from: "onboarding@resend.dev"` (sandbox mode — can only send to Resend-verified emails)
+3. The hook **fails** (500 error / timeout), Supabase retries, and you hit the **rate limit** (429)
 
-Para cada rota, mostrar a distancia entre o entregador e a padaria de recolha, usando as coordenadas do `entregador_status` e da tabela `padarias` (`coordenadas_lat`, `coordenadas_lng`).
+You chose native Supabase email, but the hook intercepts ALL email sending before Supabase's native SMTP can act. The native email never gets a chance to send.
 
-### Alteracoes em `PedidosDisponiveis.tsx`:
-- Buscar a posicao actual do entregador da tabela `entregador_status`
-- Buscar `coordenadas_lat` e `coordenadas_lng` das padarias junto com as rotas
-- Calcular distancia (Haversine) entre entregador e cada padaria
-- Adicionar `Tabs` internas: "Proximos" (filtrado por raio) e "Todos"
-- Mostrar badge de distancia em cada card de rota
-- Ordenar por distancia (mais proximos primeiro)
-- Rotas fora do alcance mostram badge "Fora do alcance" a vermelho na aba "Todos"
+## Plan
 
-## 2. Erros e Problemas Identificados no Sistema
+### Step 1: Disable the Auth Hook (manual — required)
 
-### Bug 1: `ListaParagens.tsx` - Logica de "todos entregues" incorrecta (Linha 74)
-```
-const todosEntregues = rota.pedidos_ids.every((id: string) => id === pedidoParaComprovar);
-```
-Isto verifica se TODOS os IDs sao iguais ao pedido actual, nao se todos foram entregues. So funciona se houver 1 pedido. Deve verificar no banco de dados quantos pedidos dessa rota ja tem status `entregue`.
+You must go to: **[Authentication → Hooks](https://supabase.com/dashboard/project/tbrmfcglxwwvjgulskfj/auth/hooks)**
 
-**Correccao**: Apos marcar o pedido como entregue, buscar todos os pedidos da rota e verificar se todos tem `status_pedido = 'entregue'`.
+- Find the **"Send Email"** hook pointing to `send-verification-email`
+- **Delete/disable** it
 
-### Bug 2: `PedidosDisponiveis.tsx` - Filtro duplo redundante (Linhas 72-73)
-```
-.or('entregador_id.is.null,status.eq.aguardando_entregador,status.eq.pendente')
-.in('status', ['pendente', 'aguardando_entregador'])
-```
-O `.or()` e o `.in()` conflituam. O `.or()` ja filtra por status, e o `.in()` sobrepoe-se. Isto pode causar resultados inesperados.
+This is the critical fix. Without this, no registration will work.
 
-**Correccao**: Remover o `.or()` e usar apenas `.is('entregador_id', null).in('status', ['pendente', 'aguardando_entregador'])`.
+### Step 2: Improve Registration Form (code changes)
 
-### Bug 3: `GanhosSection.tsx` - RLS policy referencia tabela `usuarios` em vez de `profiles`
-A tabela `pagamentos_comissoes` tem uma RLS policy que referencia `usuarios` em vez de `profiles`:
-```sql
-entregador_id IN (SELECT usuarios.id FROM usuarios WHERE usuarios.user_id = auth.uid())
-```
-Mas o sistema usa `profiles` como tabela principal de perfis. Se o entregador nao tiver registo em `usuarios`, os ganhos nunca aparecem.
+**Better error messages** — Map Supabase error codes to clear Portuguese messages:
+- `over_email_send_rate_limit` → "Muitas tentativas. Aguarde 60 segundos."
+- `user_already_exists` → "Este email já está cadastrado. Tente fazer login."
+- `weak_password` → "Senha muito fraca. Use letras, números e símbolos."
+- `validation_failed` → "Verifique os campos destacados em vermelho."
+- Network errors → "Erro de conexão. Verifique sua internet."
 
-**Correccao**: Migrar a RLS policy de `pagamentos_comissoes` para referenciar `profiles` em vez de `usuarios`.
+**Better form UX:**
+- Add a cooldown timer after submission to prevent rapid retries
+- Show inline field errors immediately on blur (not just on submit)
+- Disable submit button for 60 seconds after a rate limit error with countdown
+- Add `mode: 'onBlur'` to react-hook-form so fields validate when user leaves them
 
-### Bug 4: `NotificacaoRota.tsx` - `handleRecusar` chamado no cleanup do useEffect
-Na linha 37, quando o temporizador chega a 0, chama `handleRecusar()` que faz uma chamada assinccrona. Mas se o componente desmontar durante essa chamada, pode causar erros.
+### Step 3: Delete the broken Edge Function
 
-**Correccao**: Adicionar verificacao de componente montado.
+Remove `supabase/functions/send-verification-email/` since native Supabase email handles everything. Also clean up `config.toml` to remove its entry.
 
-### Bug 5: `ComprovativoEntrega.tsx` - PIN nao e validado contra nenhum valor
-O PIN de 4 digitos e aceite sem verificacao. Qualquer PIN funciona. Nao ha PIN real gerado e enviado ao cliente.
+### Summary of changes
 
-**Correccao**: Para a versao actual, documentar como limitacao. No futuro, gerar PIN no momento do pedido e validar.
+| Item | Type |
+|------|------|
+| Disable Auth Hook in dashboard | Manual (user) |
+| Rewrite `Register.tsx` error handling + UX | Code |
+| Rewrite `EmailVerificationNotice.tsx` with cooldown | Code |
+| Delete `send-verification-email` function | Code |
+| Clean `config.toml` | Code |
 
-### Bug 6: `HistoricoViagens.tsx` - Sem filtros por periodo
-O historico mostra apenas as ultimas 50 viagens sem opcao de filtrar por dia, semana, mes ou ano (conforme pedido do utilizador).
-
-**Correccao**: Adicionar filtros de periodo.
-
-## 3. Ficheiros a Alterar
-
-### `src/components/entregador/PedidosDisponiveis.tsx` (reescrever)
-- Importar `Tabs` para sub-abas "Proximos" / "Todos"
-- Buscar coordenadas do entregador via `entregador_status`
-- Buscar coordenadas das padarias na query (ja faz join com `padarias`)
-- Adicionar funcao `calculateDistance` (Haversine)
-- Filtrar e ordenar rotas por distancia
-- Mostrar distancia ate a padaria em cada card
-- Badge visual para "Dentro do alcance" vs "Fora do alcance"
-
-### `src/components/entregador/ListaParagens.tsx` (corrigir bug)
-- Substituir logica de verificacao `todosEntregues` por query ao banco de dados
-
-### `src/components/entregador/HistoricoViagens.tsx` (adicionar filtros)
-- Adicionar filtros: Hoje, Esta Semana, Este Mes, Este Ano, Todos
-- Usar `date-fns` para calcular ranges de datas
-
-### `supabase/migrations/` (nova migracao)
-- Corrigir RLS policy de `pagamentos_comissoes` para referenciar `profiles` em vez de `usuarios`
-
-## 4. Resumo das Mudancas
-
-| Ficheiro | Tipo | Descricao |
-|----------|------|-----------|
-| `PedidosDisponiveis.tsx` | Funcionalidade | Sub-abas Proximos/Todos com filtro por distancia |
-| `ListaParagens.tsx` | Bug fix | Corrigir logica de "todos entregues" |
-| `HistoricoViagens.tsx` | Funcionalidade | Filtros por periodo (dia/semana/mes/ano) |
-| Migracao SQL | Bug fix | Corrigir RLS de `pagamentos_comissoes` |
