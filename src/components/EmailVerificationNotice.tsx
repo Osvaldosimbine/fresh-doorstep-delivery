@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Mail, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Mail, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -11,9 +11,25 @@ interface EmailVerificationNoticeProps {
 
 export const EmailVerificationNotice = ({ email }: EmailVerificationNoticeProps) => {
   const [isResending, setIsResending] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
   const { toast } = useToast();
 
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setInterval(() => {
+      setCooldown(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldown]);
+
   const handleResendEmail = async () => {
+    if (cooldown > 0) return;
     setIsResending(true);
     
     try {
@@ -26,7 +42,8 @@ export const EmailVerificationNotice = ({ email }: EmailVerificationNoticeProps)
       });
 
       if (error) {
-        if (error.message.includes('email_send_rate_limit')) {
+        if (error.message.includes('email_send_rate_limit') || error.message.includes('rate limit')) {
+          setCooldown(60);
           toast({
             title: "Aguarde um momento",
             description: "Por favor, aguarde 60 segundos antes de solicitar um novo email.",
@@ -36,9 +53,10 @@ export const EmailVerificationNotice = ({ email }: EmailVerificationNoticeProps)
           throw error;
         }
       } else {
+        setCooldown(60);
         toast({
           title: "Email reenviado!",
-          description: "Verifique sua caixa de entrada e spam.",
+          description: "Verifique sua caixa de entrada e pasta de spam.",
         });
       }
     } catch (error: any) {
@@ -85,9 +103,15 @@ export const EmailVerificationNotice = ({ email }: EmailVerificationNoticeProps)
               variant="outline" 
               size="sm"
               onClick={handleResendEmail}
-              disabled={isResending}
+              disabled={isResending || cooldown > 0}
             >
-              {isResending ? "Reenviando..." : "Reenviar Email"}
+              {isResending ? (
+                <><Loader2 className="mr-2 h-3 w-3 animate-spin" /> Reenviando...</>
+              ) : cooldown > 0 ? (
+                `Reenviar em ${cooldown}s`
+              ) : (
+                "Reenviar Email"
+              )}
             </Button>
           </div>
         </AlertDescription>
