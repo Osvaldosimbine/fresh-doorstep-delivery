@@ -228,7 +228,7 @@ const CheckoutCart = () => {
       <Card className="w-full max-w-md mx-auto">
         <CardContent className="pt-6 text-center">
           <p className="text-muted-foreground">Seu carrinho está vazio</p>
-          <Button onClick={() => navigate('/products')} className="mt-4">
+          <Button onClick={() => navigate('/fazer-pedido')} className="mt-4">
             Ver Produtos
           </Button>
         </CardContent>

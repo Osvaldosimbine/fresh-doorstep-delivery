@@ -1,61 +1,96 @@
 
+# Plano: Pedidos por Distancia + Correccao de Erros
 
-## Plano: Limpeza da Base de Dados + Correções Técnicas + Melhoria do Checkout
+## 1. Pedidos Disponiveis com Filtro por Distancia
 
-### 1. Limpar dados de teste da base de dados
+### Problema Actual
+O componente `PedidosDisponiveis.tsx` mostra todas as rotas pendentes sem considerar a distancia entre o entregador e a padaria. O entregador nao tem forma de distinguir rotas proximas de rotas distantes.
 
-Existem 8 perfis na tabela `profiles` e 8 entradas em `user_roles`, além de 12 pedidos e 16 itens de pedido. Todos precisam ser eliminados para começar do zero.
+### Solucao
+Adicionar duas sub-abas dentro da aba "Disponiveis":
+- **"Proximos"** (default) - mostra apenas rotas dentro de um raio configuravel (ex: 10km) da posicao actual do entregador
+- **"Todos"** - mostra todas as rotas disponiveis, incluindo as que estao fora do alcance
 
-**Ação (via SQL insert tool):** Eliminar dados nas seguintes tabelas, nesta ordem (respeitando dependências):
-- `itens_pedido` (depende de pedidos)
-- `pedidos`
-- `pagamentos_comissoes`
-- `entregas`
-- `avaliacoes_entregador`
-- `comprovativo_entrega`
-- `problemas_rota`
-- `pedidos_saque`
-- `carteira_entregador`
-- `entregador_status`
-- `rotas_otimizadas`
-- `user_roles`
-- `profiles`
+Para cada rota, mostrar a distancia entre o entregador e a padaria de recolha, usando as coordenadas do `entregador_status` e da tabela `padarias` (`coordenadas_lat`, `coordenadas_lng`).
 
-**Nota:** Os utilizadores em `auth.users` só podem ser eliminados manualmente no [dashboard do Supabase](https://supabase.com/dashboard/project/tbrmfcglxwwvjgulskfj/auth/users). Será necessário que elimine os utilizadores por lá após a limpeza das tabelas públicas.
+### Alteracoes em `PedidosDisponiveis.tsx`:
+- Buscar a posicao actual do entregador da tabela `entregador_status`
+- Buscar `coordenadas_lat` e `coordenadas_lng` das padarias junto com as rotas
+- Calcular distancia (Haversine) entre entregador e cada padaria
+- Adicionar `Tabs` internas: "Proximos" (filtrado por raio) e "Todos"
+- Mostrar badge de distancia em cada card de rota
+- Ordenar por distancia (mais proximos primeiro)
+- Rotas fora do alcance mostram badge "Fora do alcance" a vermelho na aba "Todos"
 
-### 2. Defeitos técnicos identificados
+## 2. Erros e Problemas Identificados no Sistema
 
-**A) Trigger `handle_new_user` — padaria mapeada incorrectamente**
-O enum `tipo_usuario` só aceita `'cliente'` e `'entregador'`. Quando alguém se regista como padaria, o trigger atribui `tipo_usuario = 'cliente'` no perfil. Isto causa confusão nos dados. A role em `user_roles` é correctamente atribuída como `'padaria'`, mas o campo `tipo_usuario` na tabela `profiles` fica errado.
-
-**Solução:** Adicionar `'padaria'` ao enum `tipo_usuario` via migração:
-```sql
-ALTER TYPE tipo_usuario ADD VALUE IF NOT EXISTS 'padaria';
+### Bug 1: `ListaParagens.tsx` - Logica de "todos entregues" incorrecta (Linha 74)
 ```
-E actualizar o trigger para mapear correctamente.
+const todosEntregues = rota.pedidos_ids.every((id: string) => id === pedidoParaComprovar);
+```
+Isto verifica se TODOS os IDs sao iguais ao pedido actual, nao se todos foram entregues. So funciona se houver 1 pedido. Deve verificar no banco de dados quantos pedidos dessa rota ja tem status `entregue`.
 
-**B) `nome_completo` vazio para o utilizador Osvaldo Simbine**
-O perfil `osvaldosimbine.3@gmail.com` tem `nome_completo` vazio. Isto indica que o campo não foi enviado correctamente durante o registo. Será corrigido com a limpeza e novo registo.
+**Correccao**: Apos marcar o pedido como entregue, buscar todos os pedidos da rota e verificar se todos tem `status_pedido = 'entregue'`.
 
-### 3. Melhoria do fluxo de checkout
+### Bug 2: `PedidosDisponiveis.tsx` - Filtro duplo redundante (Linhas 72-73)
+```
+.or('entregador_id.is.null,status.eq.aguardando_entregador,status.eq.pendente')
+.in('status', ['pendente', 'aguardando_entregador'])
+```
+O `.or()` e o `.in()` conflituam. O `.or()` ja filtra por status, e o `.in()` sobrepoe-se. Isto pode causar resultados inesperados.
 
-**Problema actual:** Nas páginas `FazerPedido.tsx` e `Pedidos.tsx`, quando o utilizador clica "Finalizar Pedido", o `CheckoutCart` aparece na mesma página com um botão "Voltar ao carrinho" / "Voltar às padarias" que mostra novamente a listagem de padarias. O utilizador quer:
-- No checkout, **não mostrar dados de padarias**
-- Se quiser voltar aos produtos, ter um caminho claro
+**Correccao**: Remover o `.or()` e usar apenas `.is('entregador_id', null).in('status', ['pendente', 'aguardando_entregador'])`.
 
-**Solução:** Modificar `FazerPedido.tsx` e `Pedidos.tsx`:
-- Quando `showCheckout = true`, o botão de volta deve dizer **"Voltar aos Produtos"** e redirecionar para `/fazer-pedido` (lista de padarias/produtos), não mostrar a lista de padarias na mesma página
-- No `CheckoutCart.tsx`, quando o carrinho está vazio, o botão "Ver Produtos" já navega para `/products` — alterar para `/fazer-pedido` que é o fluxo principal de pedidos
-- Adicionar um link/botão claro **"Continuar Comprando"** no topo do checkout para voltar à selecção de produtos
+### Bug 3: `GanhosSection.tsx` - RLS policy referencia tabela `usuarios` em vez de `profiles`
+A tabela `pagamentos_comissoes` tem uma RLS policy que referencia `usuarios` em vez de `profiles`:
+```sql
+entregador_id IN (SELECT usuarios.id FROM usuarios WHERE usuarios.user_id = auth.uid())
+```
+Mas o sistema usa `profiles` como tabela principal de perfis. Se o entregador nao tiver registo em `usuarios`, os ganhos nunca aparecem.
 
-### Resumo de alterações
+**Correccao**: Migrar a RLS policy de `pagamentos_comissoes` para referenciar `profiles` em vez de `usuarios`.
 
-| Item | Tipo |
-|------|------|
-| Eliminar todos os dados das tabelas (profiles, user_roles, pedidos, etc.) | SQL (insert tool) |
-| Eliminar utilizadores de `auth.users` | Manual (dashboard) |
-| Adicionar 'padaria' ao enum `tipo_usuario` | Migração SQL |
-| Actualizar trigger `handle_new_user` | Migração SQL |
-| Corrigir botão de volta no checkout (`FazerPedido.tsx`, `Pedidos.tsx`) | Código |
-| Corrigir link "Ver Produtos" no `CheckoutCart.tsx` | Código |
+### Bug 4: `NotificacaoRota.tsx` - `handleRecusar` chamado no cleanup do useEffect
+Na linha 37, quando o temporizador chega a 0, chama `handleRecusar()` que faz uma chamada assinccrona. Mas se o componente desmontar durante essa chamada, pode causar erros.
 
+**Correccao**: Adicionar verificacao de componente montado.
+
+### Bug 5: `ComprovativoEntrega.tsx` - PIN nao e validado contra nenhum valor
+O PIN de 4 digitos e aceite sem verificacao. Qualquer PIN funciona. Nao ha PIN real gerado e enviado ao cliente.
+
+**Correccao**: Para a versao actual, documentar como limitacao. No futuro, gerar PIN no momento do pedido e validar.
+
+### Bug 6: `HistoricoViagens.tsx` - Sem filtros por periodo
+O historico mostra apenas as ultimas 50 viagens sem opcao de filtrar por dia, semana, mes ou ano (conforme pedido do utilizador).
+
+**Correccao**: Adicionar filtros de periodo.
+
+## 3. Ficheiros a Alterar
+
+### `src/components/entregador/PedidosDisponiveis.tsx` (reescrever)
+- Importar `Tabs` para sub-abas "Proximos" / "Todos"
+- Buscar coordenadas do entregador via `entregador_status`
+- Buscar coordenadas das padarias na query (ja faz join com `padarias`)
+- Adicionar funcao `calculateDistance` (Haversine)
+- Filtrar e ordenar rotas por distancia
+- Mostrar distancia ate a padaria em cada card
+- Badge visual para "Dentro do alcance" vs "Fora do alcance"
+
+### `src/components/entregador/ListaParagens.tsx` (corrigir bug)
+- Substituir logica de verificacao `todosEntregues` por query ao banco de dados
+
+### `src/components/entregador/HistoricoViagens.tsx` (adicionar filtros)
+- Adicionar filtros: Hoje, Esta Semana, Este Mes, Este Ano, Todos
+- Usar `date-fns` para calcular ranges de datas
+
+### `supabase/migrations/` (nova migracao)
+- Corrigir RLS policy de `pagamentos_comissoes` para referenciar `profiles` em vez de `usuarios`
+
+## 4. Resumo das Mudancas
+
+| Ficheiro | Tipo | Descricao |
+|----------|------|-----------|
+| `PedidosDisponiveis.tsx` | Funcionalidade | Sub-abas Proximos/Todos com filtro por distancia |
+| `ListaParagens.tsx` | Bug fix | Corrigir logica de "todos entregues" |
+| `HistoricoViagens.tsx` | Funcionalidade | Filtros por periodo (dia/semana/mes/ano) |
+| Migracao SQL | Bug fix | Corrigir RLS de `pagamentos_comissoes` |

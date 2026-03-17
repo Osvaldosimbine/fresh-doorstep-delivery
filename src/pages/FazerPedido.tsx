@@ -62,7 +62,7 @@ const FazerPedido = () => {
               className="mb-6"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar ao carrinho
+              Voltar aos Produtos
             </Button>
             <CheckoutCart />
           </div>

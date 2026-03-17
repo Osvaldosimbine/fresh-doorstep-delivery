@@ -864,7 +864,7 @@ export type Database = {
         | "a_caminho"
         | "entregue"
         | "cancelado"
-      tipo_usuario: "cliente" | "entregador"
+      tipo_usuario: "cliente" | "entregador" | "padaria"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1003,7 +1003,7 @@ export const Constants = {
         "entregue",
         "cancelado",
       ],
-      tipo_usuario: ["cliente", "entregador"],
+      tipo_usuario: ["cliente", "entregador", "padaria"],
     },
   },
 } as const
