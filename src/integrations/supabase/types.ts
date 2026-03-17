@@ -843,6 +843,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      credit_delivery_commission: {
+        Args: {
+          p_amount: number
+          p_entregador_id: string
+          p_to_available?: boolean
+        }
+        Returns: undefined
+      }
       get_user_role: { Args: { user_uuid?: string }; Returns: string }
       has_role: {
         Args: {
@@ -852,6 +860,10 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { user_uuid?: string }; Returns: boolean }
+      process_wallet_withdrawal: {
+        Args: { p_amount: number; p_entregador_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "cliente" | "entregador" | "padaria"
