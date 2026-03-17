@@ -84,11 +84,12 @@ export const CarteiraDigital = () => {
       });
       if (error) throw error;
 
-      // Deduct from available balance
-      await supabase
-        .from('carteira_entregador')
-        .update({ saldo_disponivel: (carteira?.saldo_disponivel || 0) - valor })
-        .eq('entregador_id', userProfile.id);
+      // Deduct from available balance via secure RPC
+      const { error: rpcError } = await supabase.rpc('process_wallet_withdrawal', {
+        p_entregador_id: userProfile.id,
+        p_amount: valor,
+      });
+      if (rpcError) throw rpcError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['carteira'] });
