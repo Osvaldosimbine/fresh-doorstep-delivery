@@ -219,6 +219,27 @@ const OrderTracking = () => {
             </CardContent>
           </Card>
 
+          {/* Live Map - shown when order is in transit */}
+          {(order.status_pedido === 'a_caminho' || order.status_pedido === 'em_preparacao') && (
+            <Card className="mb-6">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Rastreamento em Tempo Real
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <DeliveryTrackingMap
+                  orderId={order.id}
+                  bakeryCoords={bakeryCoords}
+                  bakeryAddress={order.padaria?.endereco}
+                  deliveryAddress={order.endereco_entrega}
+                  entregadorId={order.entregador ? undefined : undefined}
+                />
+              </CardContent>
+            </Card>
+          )}
+
           {/* Order Details Card */}
           <Card className="mb-6">
             <CardHeader>
