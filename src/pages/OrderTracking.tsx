@@ -234,7 +234,7 @@ const OrderTracking = () => {
                   bakeryCoords={bakeryCoords}
                   bakeryAddress={order.padaria?.endereco}
                   deliveryAddress={order.endereco_entrega}
-                  entregadorId={order.entregador ? undefined : undefined}
+                  entregadorId={order.entregador_id}
                 />
               </CardContent>
             </Card>

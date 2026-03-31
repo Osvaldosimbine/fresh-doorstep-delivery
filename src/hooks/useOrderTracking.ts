@@ -14,6 +14,7 @@ interface OrderDetails {
   taxa_servico_total: number | null;
   endereco_entrega: string;
   forma_pagamento: string;
+  entregador_id: string | null;
   horario_agendado: string | null;
   observacoes: string | null;
   padaria: {
