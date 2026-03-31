@@ -23,6 +23,7 @@ import {
 import { useOrderTracking } from "@/hooks/useOrderTracking";
 import { OrderTrackingStatus } from "@/components/OrderTrackingStatus";
 import ReceiptGenerator from "@/components/ReceiptGenerator";
+import { DeliveryTrackingMap } from "@/components/map/DeliveryTrackingMap";
 import { supabase } from "@/integrations/supabase/client";
 
 const OrderTracking = () => {
@@ -33,6 +34,7 @@ const OrderTracking = () => {
     status: string;
     ordem_paragens: any;
   } | null>(null);
+  const [bakeryCoords, setBakeryCoords] = useState<{ lat: number; lng: number } | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { id: paramId } = useParams();
@@ -52,11 +54,23 @@ const OrderTracking = () => {
     refetch,
   } = useOrderTracking(orderId);
 
-  // Fetch route info if order is in transit
+  // Fetch route info and bakery coords
   useEffect(() => {
     const fetchRotaInfo = async () => {
       if (!orderId || !order?.status_pedido) return;
       
+      // Fetch bakery coordinates
+      if (order.padaria) {
+        const { data: padaria } = await supabase
+          .from('padarias')
+          .select('coordenadas_lat, coordenadas_lng')
+          .eq('nome_padaria', order.padaria.nome_padaria)
+          .single();
+        if (padaria?.coordenadas_lat && padaria?.coordenadas_lng) {
+          setBakeryCoords({ lat: padaria.coordenadas_lat, lng: padaria.coordenadas_lng });
+        }
+      }
+
       if (order.status_pedido === 'a_caminho') {
         const { data: rotas } = await supabase
           .from('rotas_otimizadas')
@@ -204,6 +218,27 @@ const OrderTracking = () => {
               />
             </CardContent>
           </Card>
+
+          {/* Live Map - shown when order is in transit */}
+          {(order.status_pedido === 'a_caminho' || order.status_pedido === 'em_preparacao') && (
+            <Card className="mb-6">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Rastreamento em Tempo Real
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <DeliveryTrackingMap
+                  orderId={order.id}
+                  bakeryCoords={bakeryCoords}
+                  bakeryAddress={order.padaria?.endereco}
+                  deliveryAddress={order.endereco_entrega}
+                  entregadorId={order.entregador_id}
+                />
+              </CardContent>
+            </Card>
+          )}
 
           {/* Order Details Card */}
           <Card className="mb-6">
