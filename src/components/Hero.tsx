@@ -1,9 +1,27 @@
 import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import heroBread from "@/assets/hero-bread.jpg";
 import UserTypeSelector from "@/components/UserTypeSelector";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Hero = () => {
+  const { user, userProfile } = useAuth();
+  const navigate = useNavigate();
+
+  const handleAuthenticatedCTA = () => {
+    switch (userProfile?.role) {
+      case 'padaria':
+        navigate('/padaria/dashboard');
+        break;
+      case 'entregador':
+        navigate('/entregador/dashboard');
+        break;
+      default:
+        navigate('/fazer-pedido');
+    }
+  };
+
   return (
     <section id="inicio" className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Image with Overlay */}
@@ -33,11 +51,17 @@ const Hero = () => {
           
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up" style={{animationDelay: '0.4s'}}>
-            <UserTypeSelector>
-              <Button size="lg" className="text-lg px-8 py-4 shadow-button-custom hover:scale-105 transition-transform">
-                Quero Experimentar
+            {user ? (
+              <Button size="lg" className="text-lg px-8 py-4 shadow-button-custom hover:scale-105 transition-transform" onClick={handleAuthenticatedCTA}>
+                {userProfile?.role === 'padaria' ? 'Ir para o Painel' : userProfile?.role === 'entregador' ? 'Ir para o Dashboard' : 'Fazer Pedido'}
               </Button>
-            </UserTypeSelector>
+            ) : (
+              <UserTypeSelector>
+                <Button size="lg" className="text-lg px-8 py-4 shadow-button-custom hover:scale-105 transition-transform">
+                  Quero Experimentar
+                </Button>
+              </UserTypeSelector>
+            )}
           </div>
         </div>
       </div>

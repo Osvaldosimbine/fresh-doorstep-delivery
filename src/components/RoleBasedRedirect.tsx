@@ -14,11 +14,14 @@ export const RoleBasedRedirect = () => {
       case 'padaria':
         navigate('/padaria/dashboard', { replace: true });
         break;
+      case 'entregador':
+        navigate('/entregador/dashboard', { replace: true });
+        break;
       case 'admin':
         navigate('/admin', { replace: true });
         break;
       case 'cliente':
-        navigate('/', { replace: true });
+        navigate('/fazer-pedido', { replace: true });
         break;
       default:
         navigate('/', { replace: true });

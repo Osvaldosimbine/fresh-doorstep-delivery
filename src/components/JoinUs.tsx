@@ -3,8 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bike, Store } from "lucide-react";
 import BakeryRegistrationForm from "@/components/BakeryRegistrationForm";
 import DeliveryRegistrationForm from "@/components/DeliveryRegistrationForm";
+import { useAuth } from "@/contexts/AuthContext";
 
 const JoinUs = () => {
+  const { user } = useAuth();
+
+  // Hide registration section for logged-in users
+  if (user) return null;
   return (
     <section id="junte-se" className="py-20 bg-background">
       <div className="container mx-auto px-4">
