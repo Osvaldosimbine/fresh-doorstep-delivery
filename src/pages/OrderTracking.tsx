@@ -34,6 +34,7 @@ const OrderTracking = () => {
     status: string;
     ordem_paragens: any;
   } | null>(null);
+  const [bakeryCoords, setBakeryCoords] = useState<{ lat: number; lng: number } | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { id: paramId } = useParams();
