@@ -23,6 +23,7 @@ import {
 import { useOrderTracking } from "@/hooks/useOrderTracking";
 import { OrderTrackingStatus } from "@/components/OrderTrackingStatus";
 import ReceiptGenerator from "@/components/ReceiptGenerator";
+import { DeliveryTrackingMap } from "@/components/map/DeliveryTrackingMap";
 import { supabase } from "@/integrations/supabase/client";
 
 const OrderTracking = () => {
