@@ -14,8 +14,12 @@ const Index = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && userProfile?.role === 'entregador') {
-      navigate('/entregador/dashboard', { replace: true });
+    if (!loading && userProfile) {
+      if (userProfile.role === 'entregador') {
+        navigate('/entregador/dashboard', { replace: true });
+      } else if (userProfile.role === 'padaria') {
+        navigate('/padaria/dashboard', { replace: true });
+      }
     }
   }, [userProfile, loading, navigate]);
 
