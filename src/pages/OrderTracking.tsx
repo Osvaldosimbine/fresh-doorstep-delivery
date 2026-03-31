@@ -54,11 +54,23 @@ const OrderTracking = () => {
     refetch,
   } = useOrderTracking(orderId);
 
-  // Fetch route info if order is in transit
+  // Fetch route info and bakery coords
   useEffect(() => {
     const fetchRotaInfo = async () => {
       if (!orderId || !order?.status_pedido) return;
       
+      // Fetch bakery coordinates
+      if (order.padaria) {
+        const { data: padaria } = await supabase
+          .from('padarias')
+          .select('coordenadas_lat, coordenadas_lng')
+          .eq('nome_padaria', order.padaria.nome_padaria)
+          .single();
+        if (padaria?.coordenadas_lat && padaria?.coordenadas_lng) {
+          setBakeryCoords({ lat: padaria.coordenadas_lat, lng: padaria.coordenadas_lng });
+        }
+      }
+
       if (order.status_pedido === 'a_caminho') {
         const { data: rotas } = await supabase
           .from('rotas_otimizadas')
