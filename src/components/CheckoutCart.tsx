@@ -39,13 +39,10 @@ const CheckoutCart = () => {
 
   // Update service fees when location changes
   useEffect(() => {
-    if (selectedLocation && state.items.length > 0) {
-      const coordinates = getLocationCoordinates(selectedLocation);
-      if (coordinates) {
-        updateServiceFees(coordinates);
-      }
+    if (selectedCoordinates && state.items.length > 0) {
+      updateServiceFees(selectedCoordinates);
     }
-  }, [selectedLocation, state.items.length]);
+  }, [selectedCoordinates, state.items.length]);
 
   const handleUpdateQuantity = (itemId: string, newQuantity: number) => {
     if (newQuantity <= 0) {
