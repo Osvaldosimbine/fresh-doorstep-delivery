@@ -269,7 +269,7 @@ const CheckoutCart = () => {
         </CardContent>
       </Card>
 
-      {/* Location with GPS */}
+      {/* Location with Mapbox Autocomplete */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-bread-crust">
@@ -278,37 +278,13 @@ const CheckoutCart = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={handleUseGPS}
-            disabled={gpsLoading}
-          >
-            <Navigation className="h-4 w-4 mr-2" />
-            {gpsLoading ? "Detectando localização..." : "Usar localização actual (GPS)"}
-          </Button>
-
-          {gpsError && (
-            <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-              <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
-              <p className="text-sm text-destructive whitespace-pre-line">{gpsError}</p>
-            </div>
-          )}
-
           <div className="space-y-2">
-            <Label htmlFor="location">Ou selecione manualmente</Label>
-            <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione sua localização" />
-              </SelectTrigger>
-              <SelectContent>
-                {MAPUTO_LOCATIONS.map((location) => (
-                  <SelectItem key={location.value} value={location.value}>
-                    {location.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>Endereço de entrega</Label>
+            <MapboxAddressInput
+              value={selectedLocation}
+              onChange={handleAddressSelected}
+              placeholder="Digite o endereço ou use GPS"
+            />
           </div>
           
           <div className="space-y-2">
