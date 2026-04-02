@@ -15,11 +15,6 @@ import { getServiceFeeTier } from "@/lib/serviceFee";
 import { isOrderTimeAllowed, getNextAvailableTime, getAvailableDeliveryDates, getTimeSlotsForDate, buildScheduledTime } from "@/lib/timeUtils";
 import PaymentConfirmationDialog from "./PaymentConfirmationDialog";
 import MapboxAddressInput, { type AddressResult } from "@/components/MapboxAddressInput";
-import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
-import { getLocationCoordinates, getServiceFeeTier } from "@/lib/serviceFee";
-import { isOrderTimeAllowed, getNextAvailableTime, getAvailableDeliveryDates, getTimeSlotsForDate, buildScheduledTime } from "@/lib/timeUtils";
-import PaymentConfirmationDialog from "./PaymentConfirmationDialog";
 
 const CheckoutCart = () => {
   const { state, removeItem, updateQuantity, updateServiceFees, clearCart } = useCart();
