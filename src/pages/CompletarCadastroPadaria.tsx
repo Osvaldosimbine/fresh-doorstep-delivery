@@ -14,8 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Loader2 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import LocationSelect from "@/components/LocationSelect";
-import { MAPUTO_LOCATIONS } from "@/constants/locations";
+import MapboxAddressInput, { type AddressResult } from "@/components/MapboxAddressInput";
 
 const bakerySchema = z.object({
   nome_padaria: z.string().min(2, "Nome da padaria deve ter pelo menos 2 caracteres"),
