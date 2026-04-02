@@ -431,10 +431,25 @@ const Register = () => {
                         )}
                       />
                       
-                      <LocationSelect 
+                      <FormField
                         control={registerForm.control}
                         name="localizacao"
-                        label="Localização"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Localização</FormLabel>
+                            <FormControl>
+                              <MapboxAddressInput
+                                value={field.value}
+                                onChange={(result: AddressResult) => {
+                                  field.onChange(result.address);
+                                  registerForm.setValue('endereco', result.address);
+                                }}
+                                placeholder="Digite o endereço ou use GPS"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
                       
                       <FormField

@@ -151,11 +151,26 @@ export default function CompletarCadastroPadaria() {
                     )}
                   />
 
-                  <LocationSelect
+                  <FormField
                     control={form.control}
                     name="localizacao"
-                    label="Localização *"
-                    placeholder="Selecione a área da padaria"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Localização *</FormLabel>
+                        <FormControl>
+                          <MapboxAddressInput
+                            value={field.value}
+                            onChange={(result: AddressResult) => {
+                              field.onChange(result.address);
+                              form.setValue('endereco', result.address);
+                              (form as any).__coordenadas = result.coordinates;
+                            }}
+                            placeholder="Digite o endereço da padaria ou use GPS"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
 
                   <FormField
