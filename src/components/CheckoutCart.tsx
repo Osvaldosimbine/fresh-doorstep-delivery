@@ -26,14 +26,13 @@ const CheckoutCart = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [selectedLocation, setSelectedLocation] = useState("");
+  const [selectedCoordinates, setSelectedCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [complement, setComplement] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTimeSlot, setSelectedTimeSlot] = useState("");
-  const [gpsLoading, setGpsLoading] = useState(false);
-  const [gpsError, setGpsError] = useState("");
 
   const deliveryDates = getAvailableDeliveryDates();
   const availableSlots = selectedDate ? getTimeSlotsForDate(selectedDate) : [];
