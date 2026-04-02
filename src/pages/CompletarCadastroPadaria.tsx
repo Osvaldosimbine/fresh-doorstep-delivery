@@ -57,8 +57,6 @@ export default function CompletarCadastroPadaria() {
     
     setLoading(true);
     try {
-      const location = MAPUTO_LOCATIONS.find(loc => loc.value === values.localizacao);
-      
       const { error } = await supabase
         .from("padarias")
         .insert([
@@ -67,8 +65,8 @@ export default function CompletarCadastroPadaria() {
             nome_padaria: values.nome_padaria,
             endereco: values.endereco,
             localizacao: values.localizacao,
-            coordenadas_lat: location?.coordinates.lat,
-            coordenadas_lng: location?.coordinates.lng,
+            coordenadas_lat: (form as any).__coordenadas?.lat ?? null,
+            coordenadas_lng: (form as any).__coordenadas?.lng ?? null,
             horario_funcionamento: values.horario_funcionamento ? 
               { info: values.horario_funcionamento } : null,
             status_ativa: true,
