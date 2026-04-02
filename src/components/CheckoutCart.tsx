@@ -55,76 +55,9 @@ const CheckoutCart = () => {
     }
   };
 
-  const handleUseGPS = () => {
-    setGpsLoading(true);
-    setGpsError("");
-
-    if (!navigator.geolocation) {
-      setGpsError("O seu navegador não suporta geolocalização.");
-      setGpsLoading(false);
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        // Find the closest known location
-        let closestLocation: typeof MAPUTO_LOCATIONS[number] = MAPUTO_LOCATIONS[0];
-        let minDist = Infinity;
-        for (const loc of MAPUTO_LOCATIONS) {
-          const dist = Math.sqrt(
-            Math.pow(loc.coordinates.lat - latitude, 2) +
-            Math.pow(loc.coordinates.lng - longitude, 2)
-          );
-          if (dist < minDist) {
-            minDist = dist;
-            closestLocation = loc;
-          }
-        }
-        setSelectedLocation(closestLocation.value);
-        setGpsLoading(false);
-        toast({
-          title: "Localização detectada",
-          description: `Localização mais próxima: ${closestLocation.label}`,
-        });
-      },
-      (error) => {
-        setGpsLoading(false);
-        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-        const isAndroid = /Android/i.test(navigator.userAgent);
-        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            if (isMobile) {
-              const instructions = isAndroid
-                ? "No Android:\n1. Abra Configurações > Localização > Active o GPS\n2. No navegador: toque nos 3 pontos (⋮) > Configurações > Configurações do site > Localização > Permitir"
-                : isIOS
-                ? "No iPhone/iPad:\n1. Abra Definições > Privacidade > Serviços de localização > Active\n2. Role até ao navegador (Safari/Chrome) > Selecione 'Ao usar o app'"
-                : "Active o GPS nas configurações do seu dispositivo e permita o acesso à localização no navegador.";
-              setGpsError(`Permissão de localização negada.\n\n${instructions}`);
-            } else {
-              setGpsError(
-                "Permissão de localização negada.\n\nNo navegador: clique no ícone 🔒 ao lado do endereço > Permissões > Localização > Permitir. Depois recarregue a página."
-              );
-            }
-            break;
-          case error.POSITION_UNAVAILABLE:
-            setGpsError(
-              isMobile
-                ? "Localização indisponível. Verifique se o GPS está activado: Configurações > Localização."
-                : "Localização indisponível. Verifique se o GPS está ativado no seu dispositivo."
-            );
-            break;
-          case error.TIMEOUT:
-            setGpsError("Tempo esgotado. Tente novamente ou selecione manualmente.");
-            break;
-          default:
-            setGpsError("Erro ao obter localização. Selecione manualmente abaixo.");
-        }
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
+  const handleAddressSelected = (result: AddressResult) => {
+    setSelectedLocation(result.address);
+    setSelectedCoordinates(result.coordinates);
   };
 
   const validateFields = (): boolean => {
