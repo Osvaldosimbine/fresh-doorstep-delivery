@@ -49,11 +49,8 @@ const CheckoutCart = () => {
       removeItem(itemId);
     } else {
       updateQuantity(itemId, newQuantity);
-      if (selectedLocation) {
-        const coordinates = getLocationCoordinates(selectedLocation);
-        if (coordinates) {
-          updateServiceFees(coordinates);
-        }
+      if (selectedCoordinates) {
+        updateServiceFees(selectedCoordinates);
       }
     }
   };
