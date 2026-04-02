@@ -1,96 +1,97 @@
 
-# Plano: Pedidos por Distancia + Correccao de Erros
 
-## 1. Pedidos Disponiveis com Filtro por Distancia
+## Plano: Correcoes Criticas do Sistema
 
-### Problema Actual
-O componente `PedidosDisponiveis.tsx` mostra todas as rotas pendentes sem considerar a distancia entre o entregador e a padaria. O entregador nao tem forma de distinguir rotas proximas de rotas distantes.
+### Problemas Identificados e Solucoes
 
-### Solucao
-Adicionar duas sub-abas dentro da aba "Disponiveis":
-- **"Proximos"** (default) - mostra apenas rotas dentro de um raio configuravel (ex: 10km) da posicao actual do entregador
-- **"Todos"** - mostra todas as rotas disponiveis, incluindo as que estao fora do alcance
+---
 
-Para cada rota, mostrar a distancia entre o entregador e a padaria de recolha, usando as coordenadas do `entregador_status` e da tabela `padarias` (`coordenadas_lat`, `coordenadas_lng`).
+### 1. Rate Limit de 60 segundos no registo do entregador
 
-### Alteracoes em `PedidosDisponiveis.tsx`:
-- Buscar a posicao actual do entregador da tabela `entregador_status`
-- Buscar `coordenadas_lat` e `coordenadas_lng` das padarias junto com as rotas
-- Calcular distancia (Haversine) entre entregador e cada padaria
-- Adicionar `Tabs` internas: "Proximos" (filtrado por raio) e "Todos"
-- Mostrar badge de distancia em cada card de rota
-- Ordenar por distancia (mais proximos primeiro)
-- Rotas fora do alcance mostram badge "Fora do alcance" a vermelho na aba "Todos"
+**Problema:** O Supabase impoe um rate limit de emails (1 por 60s). O sistema ja trata isso, mas a mensagem nao e suficientemente clara e o cooldown aparece mesmo quando o registo foi bem-sucedido.
 
-## 2. Erros e Problemas Identificados no Sistema
+**Solucao:** Melhorar a mensagem em `Register.tsx` para explicar que e um limite do servidor de emails, nao um erro do utilizador. Adicionar contexto: "O servidor de verificacao limita envios a 1 email por minuto. O seu registo pode ja ter sido criado -- verifique a sua caixa de entrada."
 
-### Bug 1: `ListaParagens.tsx` - Logica de "todos entregues" incorrecta (Linha 74)
-```
-const todosEntregues = rota.pedidos_ids.every((id: string) => id === pedidoParaComprovar);
-```
-Isto verifica se TODOS os IDs sao iguais ao pedido actual, nao se todos foram entregues. So funciona se houver 1 pedido. Deve verificar no banco de dados quantos pedidos dessa rota ja tem status `entregue`.
+---
 
-**Correccao**: Apos marcar o pedido como entregue, buscar todos os pedidos da rota e verificar se todos tem `status_pedido = 'entregue'`.
+### 2. GPS nao puxa a localizacao certa
 
-### Bug 2: `PedidosDisponiveis.tsx` - Filtro duplo redundante (Linhas 72-73)
-```
-.or('entregador_id.is.null,status.eq.aguardando_entregador,status.eq.pendente')
-.in('status', ['pendente', 'aguardando_entregador'])
-```
-O `.or()` e o `.in()` conflituam. O `.or()` ja filtra por status, e o `.in()` sobrepoe-se. Isto pode causar resultados inesperados.
+**Problema:** O GPS funciona, mas mapeia para a localizacao fixa mais proxima de uma lista de apenas 6 locais (`MAPUTO_LOCATIONS`). Se o utilizador estiver a 5km de qualquer um deles, o resultado e impreciso.
 
-**Correccao**: Remover o `.or()` e usar apenas `.is('entregador_id', null).in('status', ['pendente', 'aguardando_entregador'])`.
+**Solucao (Problema 2 + 3 combinados):** Substituir o sistema de localizacoes fixas por **Mapbox Geocoding API** (reverse geocoding). Quando o GPS detecta as coordenadas, o sistema faz reverse geocoding para obter o endereco real. O campo de localizacao passa a ser um **input de texto com autocomplete** usando a Mapbox Search/Geocoding API, em vez de um dropdown limitado.
 
-### Bug 3: `GanhosSection.tsx` - RLS policy referencia tabela `usuarios` em vez de `profiles`
-A tabela `pagamentos_comissoes` tem uma RLS policy que referencia `usuarios` em vez de `profiles`:
-```sql
-entregador_id IN (SELECT usuarios.id FROM usuarios WHERE usuarios.user_id = auth.uid())
-```
-Mas o sistema usa `profiles` como tabela principal de perfis. Se o entregador nao tiver registo em `usuarios`, os ganhos nunca aparecem.
+---
 
-**Correccao**: Migrar a RLS policy de `pagamentos_comissoes` para referenciar `profiles` em vez de `usuarios`.
+### 3. Sistema de localizacao super limitado
 
-### Bug 4: `NotificacaoRota.tsx` - `handleRecusar` chamado no cleanup do useEffect
-Na linha 37, quando o temporizador chega a 0, chama `handleRecusar()` que faz uma chamada assinccrona. Mas se o componente desmontar durante essa chamada, pode causar erros.
+**Problema:** `MAPUTO_LOCATIONS` tem apenas 6 entradas (Central, Polana, Coop, Sommerschield, Matola, Cidade de Maputo). Impossivel cobrir toda a area metropolitana.
 
-**Correccao**: Adicionar verificacao de componente montado.
+**Solucao:** Criar um novo componente `MapboxAddressInput` que:
+- Usa a **Mapbox Geocoding API** para autocomplete de enderecos
+- Filtra resultados para Mocambique (`country=mz`)
+- Retorna coordenadas exactas + endereco formatado
+- Substitui o `LocationSelect` no registo e o dropdown no checkout
+- GPS + reverse geocoding preenche automaticamente o campo
 
-### Bug 5: `ComprovativoEntrega.tsx` - PIN nao e validado contra nenhum valor
-O PIN de 4 digitos e aceite sem verificacao. Qualquer PIN funciona. Nao ha PIN real gerado e enviado ao cliente.
+**Ficheiros afectados:**
+- Novo: `src/components/MapboxAddressInput.tsx`
+- Alterar: `src/components/CheckoutCart.tsx` -- substituir dropdown por `MapboxAddressInput`
+- Alterar: `src/pages/Register.tsx` -- substituir `LocationSelect` por `MapboxAddressInput`
+- Alterar: `src/components/LocationFilter.tsx` -- substituir dropdown por autocomplete
+- Alterar: `src/pages/CompletarCadastroPadaria.tsx` -- usar autocomplete para endereco da padaria
+- O ficheiro `constants/locations.ts` permanece como fallback mas deixa de ser a fonte principal
 
-**Correccao**: Para a versao actual, documentar como limitacao. No futuro, gerar PIN no momento do pedido e validar.
+---
 
-### Bug 6: `HistoricoViagens.tsx` - Sem filtros por periodo
-O historico mostra apenas as ultimas 50 viagens sem opcao de filtrar por dia, semana, mes ou ano (conforme pedido do utilizador).
+### 4. Pedidos nao aparecem para o entregador
 
-**Correccao**: Adicionar filtros de periodo.
+**Problema critico:** Ha uma cadeia de dependencias que impede os pedidos de chegarem ao entregador:
 
-## 3. Ficheiros a Alterar
+1. O pedido e criado com `status_pedido = 'em_preparacao'`
+2. A funcao `processar-pedidos-prontos` converte pedidos em rotas, **mas so cria rotas se houver pelo menos 2 pedidos por padaria**
+3. O `PedidosDisponiveis` so mostra **rotas**, nao pedidos individuais
+4. O raio de filtragem e de apenas 10km (aba "Proximos")
 
-### `src/components/entregador/PedidosDisponiveis.tsx` (reescrever)
-- Importar `Tabs` para sub-abas "Proximos" / "Todos"
-- Buscar coordenadas do entregador via `entregador_status`
-- Buscar coordenadas das padarias na query (ja faz join com `padarias`)
-- Adicionar funcao `calculateDistance` (Haversine)
-- Filtrar e ordenar rotas por distancia
-- Mostrar distancia ate a padaria em cada card
-- Badge visual para "Dentro do alcance" vs "Fora do alcance"
+**Resultado:** Com 1 unico pedido de teste, nenhuma rota e criada, logo nada aparece.
 
-### `src/components/entregador/ListaParagens.tsx` (corrigir bug)
-- Substituir logica de verificacao `todosEntregues` por query ao banco de dados
+**Solucao multi-parte:**
 
-### `src/components/entregador/HistoricoViagens.tsx` (adicionar filtros)
-- Adicionar filtros: Hoje, Esta Semana, Este Mes, Este Ano, Todos
-- Usar `date-fns` para calcular ranges de datas
+**A) Mostrar pedidos individuais alem de rotas:**
+- Alterar `PedidosDisponiveis.tsx` para buscar tambem pedidos `em_preparacao` sem `entregador_id` e sem rota atribuida
+- Mostrar esses pedidos como cards individuais que o entregador pode aceitar directamente
+- Quando aceite, o pedido passa para `a_caminho` e o `entregador_id` e preenchido
 
-### `supabase/migrations/` (nova migracao)
-- Corrigir RLS policy de `pagamentos_comissoes` para referenciar `profiles` em vez de `usuarios`
+**B) Aumentar raio para 30km:**
+- Alterar `DEFAULT_RANGE_KM` de 10 para 30 em `src/lib/distance.ts`
 
-## 4. Resumo das Mudancas
+**C) Remover requisito minimo de 2 pedidos:**
+- Alterar `processar-pedidos-prontos` para criar rotas mesmo com 1 pedido (ou simplesmente permitir que o entregador aceite pedidos individuais sem rota)
 
-| Ficheiro | Tipo | Descricao |
-|----------|------|-----------|
-| `PedidosDisponiveis.tsx` | Funcionalidade | Sub-abas Proximos/Todos com filtro por distancia |
-| `ListaParagens.tsx` | Bug fix | Corrigir logica de "todos entregues" |
-| `HistoricoViagens.tsx` | Funcionalidade | Filtros por periodo (dia/semana/mes/ano) |
-| Migracao SQL | Bug fix | Corrigir RLS de `pagamentos_comissoes` |
+---
+
+### 5. Problemas adicionais identificados
+
+**A) Pedido usa `distancia_km: 5.0` hardcoded:**
+Em `process-order/index.ts` (linha 228), a distancia e sempre 5km. Com o novo sistema de geocoding, podemos calcular a distancia real entre padaria e cliente.
+
+**B) Sem notificacao real-time para entregadores sobre novos pedidos:**
+O sistema tem subscription para `rotas_otimizadas` mas nao para `pedidos` directamente. Adicionar subscription para pedidos `em_preparacao`.
+
+**C) Padaria sem coordenadas bloqueia todo o fluxo:**
+Se a padaria nao tiver `coordenadas_lat/lng`, a funcao `processar-pedidos-prontos` ignora o pedido silenciosamente. No completar cadastro da padaria, devemos obrigar o preenchimento de coordenadas via o novo `MapboxAddressInput`.
+
+---
+
+### Resumo de alteracoes
+
+| Ficheiro | Alteracao |
+|----------|-----------|
+| `src/components/MapboxAddressInput.tsx` | **Novo** -- autocomplete de enderecos via Mapbox Geocoding |
+| `src/components/CheckoutCart.tsx` | Substituir dropdown fixo por `MapboxAddressInput` |
+| `src/pages/Register.tsx` | Substituir `LocationSelect` por `MapboxAddressInput`; melhorar mensagem de rate limit |
+| `src/components/entregador/PedidosDisponiveis.tsx` | Buscar e mostrar pedidos individuais (sem rota); aumentar visibilidade |
+| `src/lib/distance.ts` | `DEFAULT_RANGE_KM` de 10 para 30 |
+| `supabase/functions/processar-pedidos-prontos/index.ts` | Permitir rotas com 1 pedido |
+| `src/pages/CompletarCadastroPadaria.tsx` | Usar `MapboxAddressInput` para coordenadas |
+| `src/components/LocationFilter.tsx` | Adaptar para autocomplete |
+
