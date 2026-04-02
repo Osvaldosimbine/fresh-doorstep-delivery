@@ -62,7 +62,7 @@ function mapAuthError(error: any): string {
   const code = error?.code?.toLowerCase() || '';
 
   if (msg.includes('over_email_send_rate_limit') || msg.includes('rate limit') || code === 'over_email_send_rate_limit') {
-    return 'Muitas tentativas. Por favor, aguarde 60 segundos antes de tentar novamente.';
+    return 'O servidor de verificação limita envios a 1 email por minuto. O seu registo pode já ter sido criado — verifique a sua caixa de entrada antes de tentar novamente.';
   }
   if (msg.includes('user already registered') || msg.includes('already been registered') || code === 'user_already_exists') {
     return 'Este email já está cadastrado. Tente fazer login na aba "Entrar".';
