@@ -8,125 +8,51 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Trash2, MapPin, CreditCard, TrendingDown, Truck, Clock, Calendar, Navigation, AlertTriangle } from "lucide-react";
-import { MAPUTO_LOCATIONS } from "@/constants/locations";
+import { Trash2, MapPin, CreditCard, TrendingDown, Truck, Clock, Calendar, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { getLocationCoordinates, getServiceFeeTier } from "@/lib/serviceFee";
+import { getServiceFeeTier } from "@/lib/serviceFee";
 import { isOrderTimeAllowed, getNextAvailableTime, getAvailableDeliveryDates, getTimeSlotsForDate, buildScheduledTime } from "@/lib/timeUtils";
 import PaymentConfirmationDialog from "./PaymentConfirmationDialog";
+import MapboxAddressInput, { type AddressResult } from "@/components/MapboxAddressInput";
 
 const CheckoutCart = () => {
   const { state, removeItem, updateQuantity, updateServiceFees, clearCart } = useCart();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [selectedLocation, setSelectedLocation] = useState("");
+  const [selectedCoordinates, setSelectedCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [complement, setComplement] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTimeSlot, setSelectedTimeSlot] = useState("");
-  const [gpsLoading, setGpsLoading] = useState(false);
-  const [gpsError, setGpsError] = useState("");
 
   const deliveryDates = getAvailableDeliveryDates();
   const availableSlots = selectedDate ? getTimeSlotsForDate(selectedDate) : [];
 
   // Update service fees when location changes
   useEffect(() => {
-    if (selectedLocation && state.items.length > 0) {
-      const coordinates = getLocationCoordinates(selectedLocation);
-      if (coordinates) {
-        updateServiceFees(coordinates);
-      }
+    if (selectedCoordinates && state.items.length > 0) {
+      updateServiceFees(selectedCoordinates);
     }
-  }, [selectedLocation, state.items.length]);
+  }, [selectedCoordinates, state.items.length]);
 
   const handleUpdateQuantity = (itemId: string, newQuantity: number) => {
     if (newQuantity <= 0) {
       removeItem(itemId);
     } else {
       updateQuantity(itemId, newQuantity);
-      if (selectedLocation) {
-        const coordinates = getLocationCoordinates(selectedLocation);
-        if (coordinates) {
-          updateServiceFees(coordinates);
-        }
+      if (selectedCoordinates) {
+        updateServiceFees(selectedCoordinates);
       }
     }
   };
 
-  const handleUseGPS = () => {
-    setGpsLoading(true);
-    setGpsError("");
-
-    if (!navigator.geolocation) {
-      setGpsError("O seu navegador não suporta geolocalização.");
-      setGpsLoading(false);
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        // Find the closest known location
-        let closestLocation: typeof MAPUTO_LOCATIONS[number] = MAPUTO_LOCATIONS[0];
-        let minDist = Infinity;
-        for (const loc of MAPUTO_LOCATIONS) {
-          const dist = Math.sqrt(
-            Math.pow(loc.coordinates.lat - latitude, 2) +
-            Math.pow(loc.coordinates.lng - longitude, 2)
-          );
-          if (dist < minDist) {
-            minDist = dist;
-            closestLocation = loc;
-          }
-        }
-        setSelectedLocation(closestLocation.value);
-        setGpsLoading(false);
-        toast({
-          title: "Localização detectada",
-          description: `Localização mais próxima: ${closestLocation.label}`,
-        });
-      },
-      (error) => {
-        setGpsLoading(false);
-        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-        const isAndroid = /Android/i.test(navigator.userAgent);
-        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            if (isMobile) {
-              const instructions = isAndroid
-                ? "No Android:\n1. Abra Configurações > Localização > Active o GPS\n2. No navegador: toque nos 3 pontos (⋮) > Configurações > Configurações do site > Localização > Permitir"
-                : isIOS
-                ? "No iPhone/iPad:\n1. Abra Definições > Privacidade > Serviços de localização > Active\n2. Role até ao navegador (Safari/Chrome) > Selecione 'Ao usar o app'"
-                : "Active o GPS nas configurações do seu dispositivo e permita o acesso à localização no navegador.";
-              setGpsError(`Permissão de localização negada.\n\n${instructions}`);
-            } else {
-              setGpsError(
-                "Permissão de localização negada.\n\nNo navegador: clique no ícone 🔒 ao lado do endereço > Permissões > Localização > Permitir. Depois recarregue a página."
-              );
-            }
-            break;
-          case error.POSITION_UNAVAILABLE:
-            setGpsError(
-              isMobile
-                ? "Localização indisponível. Verifique se o GPS está activado: Configurações > Localização."
-                : "Localização indisponível. Verifique se o GPS está ativado no seu dispositivo."
-            );
-            break;
-          case error.TIMEOUT:
-            setGpsError("Tempo esgotado. Tente novamente ou selecione manualmente.");
-            break;
-          default:
-            setGpsError("Erro ao obter localização. Selecione manualmente abaixo.");
-        }
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
+  const handleAddressSelected = (result: AddressResult) => {
+    setSelectedLocation(result.address);
+    setSelectedCoordinates(result.coordinates);
   };
 
   const validateFields = (): boolean => {
@@ -338,7 +264,7 @@ const CheckoutCart = () => {
         </CardContent>
       </Card>
 
-      {/* Location with GPS */}
+      {/* Location with Mapbox Autocomplete */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-bread-crust">
@@ -347,37 +273,13 @@ const CheckoutCart = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={handleUseGPS}
-            disabled={gpsLoading}
-          >
-            <Navigation className="h-4 w-4 mr-2" />
-            {gpsLoading ? "Detectando localização..." : "Usar localização actual (GPS)"}
-          </Button>
-
-          {gpsError && (
-            <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-              <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
-              <p className="text-sm text-destructive whitespace-pre-line">{gpsError}</p>
-            </div>
-          )}
-
           <div className="space-y-2">
-            <Label htmlFor="location">Ou selecione manualmente</Label>
-            <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione sua localização" />
-              </SelectTrigger>
-              <SelectContent>
-                {MAPUTO_LOCATIONS.map((location) => (
-                  <SelectItem key={location.value} value={location.value}>
-                    {location.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>Endereço de entrega</Label>
+            <MapboxAddressInput
+              value={selectedLocation}
+              onChange={handleAddressSelected}
+              placeholder="Digite o endereço ou use GPS"
+            />
           </div>
           
           <div className="space-y-2">

@@ -23,4 +23,4 @@ function toRad(deg: number): number {
   return deg * (Math.PI / 180);
 }
 
-export const DEFAULT_RANGE_KM = 10;
+export const DEFAULT_RANGE_KM = 30;

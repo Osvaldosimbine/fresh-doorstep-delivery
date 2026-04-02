@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import LocationSelect from '@/components/LocationSelect';
+import MapboxAddressInput, { type AddressResult } from '@/components/MapboxAddressInput';
 import { EmailVerificationNotice } from '@/components/EmailVerificationNotice';
 import { RoleBasedRedirect } from '@/components/RoleBasedRedirect';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -62,7 +62,7 @@ function mapAuthError(error: any): string {
   const code = error?.code?.toLowerCase() || '';
 
   if (msg.includes('over_email_send_rate_limit') || msg.includes('rate limit') || code === 'over_email_send_rate_limit') {
-    return 'Muitas tentativas. Por favor, aguarde 60 segundos antes de tentar novamente.';
+    return 'O servidor de verificação limita envios a 1 email por minuto. O seu registo pode já ter sido criado — verifique a sua caixa de entrada antes de tentar novamente.';
   }
   if (msg.includes('user already registered') || msg.includes('already been registered') || code === 'user_already_exists') {
     return 'Este email já está cadastrado. Tente fazer login na aba "Entrar".';
@@ -431,10 +431,25 @@ const Register = () => {
                         )}
                       />
                       
-                      <LocationSelect 
+                      <FormField
                         control={registerForm.control}
                         name="localizacao"
-                        label="Localização"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Localização</FormLabel>
+                            <FormControl>
+                              <MapboxAddressInput
+                                value={field.value}
+                                onChange={(result: AddressResult) => {
+                                  field.onChange(result.address);
+                                  registerForm.setValue('endereco', result.address);
+                                }}
+                                placeholder="Digite o endereço ou use GPS"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
                       
                       <FormField

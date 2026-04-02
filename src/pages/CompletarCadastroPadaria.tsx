@@ -14,8 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Loader2 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import LocationSelect from "@/components/LocationSelect";
-import { MAPUTO_LOCATIONS } from "@/constants/locations";
+import MapboxAddressInput, { type AddressResult } from "@/components/MapboxAddressInput";
 
 const bakerySchema = z.object({
   nome_padaria: z.string().min(2, "Nome da padaria deve ter pelo menos 2 caracteres"),
@@ -58,8 +57,6 @@ export default function CompletarCadastroPadaria() {
     
     setLoading(true);
     try {
-      const location = MAPUTO_LOCATIONS.find(loc => loc.value === values.localizacao);
-      
       const { error } = await supabase
         .from("padarias")
         .insert([
@@ -68,8 +65,8 @@ export default function CompletarCadastroPadaria() {
             nome_padaria: values.nome_padaria,
             endereco: values.endereco,
             localizacao: values.localizacao,
-            coordenadas_lat: location?.coordinates.lat,
-            coordenadas_lng: location?.coordinates.lng,
+            coordenadas_lat: (form as any).__coordenadas?.lat ?? null,
+            coordenadas_lng: (form as any).__coordenadas?.lng ?? null,
             horario_funcionamento: values.horario_funcionamento ? 
               { info: values.horario_funcionamento } : null,
             status_ativa: true,
@@ -154,11 +151,26 @@ export default function CompletarCadastroPadaria() {
                     )}
                   />
 
-                  <LocationSelect
+                  <FormField
                     control={form.control}
                     name="localizacao"
-                    label="Localização *"
-                    placeholder="Selecione a área da padaria"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Localização *</FormLabel>
+                        <FormControl>
+                          <MapboxAddressInput
+                            value={field.value}
+                            onChange={(result: AddressResult) => {
+                              field.onChange(result.address);
+                              form.setValue('endereco', result.address);
+                              (form as any).__coordenadas = result.coordinates;
+                            }}
+                            placeholder="Digite o endereço da padaria ou use GPS"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
 
                   <FormField
