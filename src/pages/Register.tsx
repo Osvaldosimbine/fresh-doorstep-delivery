@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import LocationSelect from '@/components/LocationSelect';
+import MapboxAddressInput, { type AddressResult } from '@/components/MapboxAddressInput';
 import { EmailVerificationNotice } from '@/components/EmailVerificationNotice';
 import { RoleBasedRedirect } from '@/components/RoleBasedRedirect';
 import { Alert, AlertDescription } from '@/components/ui/alert';
