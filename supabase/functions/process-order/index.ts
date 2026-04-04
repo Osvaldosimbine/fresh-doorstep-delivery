@@ -193,14 +193,12 @@ serve(async (req) => {
       });
     }
 
-    // Validate service fee (simple validation based on quantity - could be enhanced with distance)
-    const expectedMinServiceFee = totalQuantidade * 2; // Minimum 2 MZN per item
-    const expectedMaxServiceFee = totalQuantidade * 6; // Maximum 6 MZN per item
+    // Validate service fee - it's a fixed delivery fee (5/10/15 MT based on distance), not per-item
     const providedServiceFee = orderData.taxa_servico_total || 0;
 
-    if (providedServiceFee < 0 || providedServiceFee > expectedMaxServiceFee) {
+    if (providedServiceFee < 0 || providedServiceFee > 50) {
       return new Response(
-        JSON.stringify({ error: `Invalid service fee: ${providedServiceFee}. Expected between ${expectedMinServiceFee} and ${expectedMaxServiceFee} MZN` }),
+        JSON.stringify({ error: `Invalid service fee: ${providedServiceFee}. Maximum allowed is 50 MZN` }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 

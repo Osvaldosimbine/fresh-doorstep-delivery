@@ -8,13 +8,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Trash2, MapPin, CreditCard, TrendingDown, Truck, Clock, Calendar, AlertTriangle } from "lucide-react";
+import { Trash2, MapPin, CreditCard, TrendingDown, Truck, Clock, CalendarIcon, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { getServiceFeeTier } from "@/lib/serviceFee";
-import { isOrderTimeAllowed, getNextAvailableTime, getAvailableDeliveryDates, getTimeSlotsForDate, buildScheduledTime } from "@/lib/timeUtils";
+import { isOrderTimeAllowed, getNextAvailableTime, getTimeSlotsForDate, buildScheduledTime, ORDER_TIME_SLOTS } from "@/lib/timeUtils";
 import PaymentConfirmationDialog from "./PaymentConfirmationDialog";
 import MapboxAddressInput, { type AddressResult } from "@/components/MapboxAddressInput";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format, addDays } from "date-fns";
+import { pt } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 const CheckoutCart = () => {
   const { state, removeItem, updateQuantity, updateServiceFees, clearCart } = useCart();
@@ -26,11 +31,13 @@ const CheckoutCart = () => {
   const [paymentMethod, setPaymentMethod] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState("");
 
-  const deliveryDates = getAvailableDeliveryDates();
-  const availableSlots = selectedDate ? getTimeSlotsForDate(selectedDate) : [];
+  const today = new Date();
+  const maxDate = addDays(today, 30);
+  const selectedDateStr = selectedDate ? format(selectedDate, "yyyy-MM-dd") : "";
+  const availableSlots = selectedDateStr ? getTimeSlotsForDate(selectedDateStr) : [];
 
   // Update service fees when location changes
   useEffect(() => {
@@ -81,11 +88,10 @@ const CheckoutCart = () => {
 
     try {
       let horarioAgendado: string | null = null;
-      if (selectedDate && selectedTimeSlot && selectedTimeSlot !== "assim_que_possivel") {
-        // Find slot start time from label
+      if (selectedDateStr && selectedTimeSlot && selectedTimeSlot !== "assim_que_possivel") {
         const slot = availableSlots.find(s => s.label === selectedTimeSlot);
         if (slot) {
-          horarioAgendado = buildScheduledTime(selectedDate, slot.start);
+          horarioAgendado = buildScheduledTime(selectedDateStr, slot.start);
         }
       }
 
@@ -305,7 +311,7 @@ const CheckoutCart = () => {
         <CardContent className="space-y-4">
           {!isOrderTimeAllowed() && (
             <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <Calendar className="h-4 w-4 text-yellow-600" />
+              <CalendarIcon className="h-4 w-4 text-yellow-600" />
               <p className="text-sm text-yellow-800">
                 <strong>Fora do horário de funcionamento.</strong> Próximo horário: {getNextAvailableTime()}
               </p>
@@ -314,16 +320,31 @@ const CheckoutCart = () => {
 
           <div className="space-y-2">
             <Label>Data de entrega</Label>
-            <Select value={selectedDate} onValueChange={(v) => { setSelectedDate(v); setSelectedTimeSlot(""); }}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione a data" />
-              </SelectTrigger>
-              <SelectContent className="bg-background z-50">
-                {deliveryDates.map((d) => (
-                  <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !selectedDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {selectedDate ? format(selectedDate, "PPP", { locale: pt }) : <span>Selecione a data</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => { setSelectedDate(date); setSelectedTimeSlot(""); }}
+                  disabled={(date) => date < today || date > maxDate}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                  locale={pt}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
           
           <div className="space-y-2">
@@ -344,7 +365,7 @@ const CheckoutCart = () => {
           <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
             <p className="text-xs text-blue-600">
               {selectedTimeSlot && selectedTimeSlot !== "assim_que_possivel"
-                ? `Pedido agendado para ${deliveryDates.find(d => d.value === selectedDate)?.label || selectedDate} - ${selectedTimeSlot}`
+                ? `Pedido agendado para ${selectedDate ? format(selectedDate, "PPP", { locale: pt }) : selectedDateStr} - ${selectedTimeSlot}`
                 : "O pedido será processado assim que possível"}
             </p>
           </div>
