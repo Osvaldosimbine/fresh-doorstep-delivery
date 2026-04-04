@@ -8,13 +8,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Trash2, MapPin, CreditCard, TrendingDown, Truck, Clock, Calendar, AlertTriangle } from "lucide-react";
+import { Trash2, MapPin, CreditCard, TrendingDown, Truck, Clock, CalendarIcon, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { getServiceFeeTier } from "@/lib/serviceFee";
-import { isOrderTimeAllowed, getNextAvailableTime, getAvailableDeliveryDates, getTimeSlotsForDate, buildScheduledTime } from "@/lib/timeUtils";
+import { isOrderTimeAllowed, getNextAvailableTime, getTimeSlotsForDate, buildScheduledTime, ORDER_TIME_SLOTS } from "@/lib/timeUtils";
 import PaymentConfirmationDialog from "./PaymentConfirmationDialog";
 import MapboxAddressInput, { type AddressResult } from "@/components/MapboxAddressInput";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format, addDays } from "date-fns";
+import { pt } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 const CheckoutCart = () => {
   const { state, removeItem, updateQuantity, updateServiceFees, clearCart } = useCart();
