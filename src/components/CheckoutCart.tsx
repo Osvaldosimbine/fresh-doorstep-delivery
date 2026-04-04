@@ -31,11 +31,13 @@ const CheckoutCart = () => {
   const [paymentMethod, setPaymentMethod] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState("");
 
-  const deliveryDates = getAvailableDeliveryDates();
-  const availableSlots = selectedDate ? getTimeSlotsForDate(selectedDate) : [];
+  const today = new Date();
+  const maxDate = addDays(today, 30);
+  const selectedDateStr = selectedDate ? format(selectedDate, "yyyy-MM-dd") : "";
+  const availableSlots = selectedDateStr ? getTimeSlotsForDate(selectedDateStr) : [];
 
   // Update service fees when location changes
   useEffect(() => {
