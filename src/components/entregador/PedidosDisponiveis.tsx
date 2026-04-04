@@ -95,15 +95,10 @@ export const PedidosDisponiveis = () => {
   const { data: pedidosRaw, isLoading: loadingPedidos, refetch: refetchPedidos } = useQuery({
     queryKey: ['pedidos-disponiveis'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pedidos')
-        .select('id, endereco_entrega, valor_total, status_pedido, created_at, padaria_id, padarias(nome_padaria, endereco, coordenadas_lat, coordenadas_lng)')
-        .is('entregador_id', null)
-        .in('status_pedido', ['em_preparacao', 'pendente'])
-        .order('created_at', { ascending: false });
+      const { data, error } = await supabase.functions.invoke('listar-pedidos-disponiveis');
 
       if (error) throw error;
-      return (data || []) as PedidoIndividual[];
+      return ((data?.pedidos || []) as PedidoIndividual[]);
     },
     refetchInterval: 15000,
   });
