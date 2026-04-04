@@ -311,7 +311,7 @@ const CheckoutCart = () => {
         <CardContent className="space-y-4">
           {!isOrderTimeAllowed() && (
             <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <Calendar className="h-4 w-4 text-yellow-600" />
+              <CalendarIcon className="h-4 w-4 text-yellow-600" />
               <p className="text-sm text-yellow-800">
                 <strong>Fora do horário de funcionamento.</strong> Próximo horário: {getNextAvailableTime()}
               </p>
@@ -320,16 +320,31 @@ const CheckoutCart = () => {
 
           <div className="space-y-2">
             <Label>Data de entrega</Label>
-            <Select value={selectedDate} onValueChange={(v) => { setSelectedDate(v); setSelectedTimeSlot(""); }}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione a data" />
-              </SelectTrigger>
-              <SelectContent className="bg-background z-50">
-                {deliveryDates.map((d) => (
-                  <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !selectedDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {selectedDate ? format(selectedDate, "PPP", { locale: pt }) : <span>Selecione a data</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => { setSelectedDate(date); setSelectedTimeSlot(""); }}
+                  disabled={(date) => date < today || date > maxDate}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                  locale={pt}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
           
           <div className="space-y-2">
@@ -350,7 +365,7 @@ const CheckoutCart = () => {
           <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
             <p className="text-xs text-blue-600">
               {selectedTimeSlot && selectedTimeSlot !== "assim_que_possivel"
-                ? `Pedido agendado para ${deliveryDates.find(d => d.value === selectedDate)?.label || selectedDate} - ${selectedTimeSlot}`
+                ? `Pedido agendado para ${selectedDate ? format(selectedDate, "PPP", { locale: pt }) : selectedDateStr} - ${selectedTimeSlot}`
                 : "O pedido será processado assim que possível"}
             </p>
           </div>
