@@ -88,11 +88,10 @@ const CheckoutCart = () => {
 
     try {
       let horarioAgendado: string | null = null;
-      if (selectedDate && selectedTimeSlot && selectedTimeSlot !== "assim_que_possivel") {
-        // Find slot start time from label
+      if (selectedDateStr && selectedTimeSlot && selectedTimeSlot !== "assim_que_possivel") {
         const slot = availableSlots.find(s => s.label === selectedTimeSlot);
         if (slot) {
-          horarioAgendado = buildScheduledTime(selectedDate, slot.start);
+          horarioAgendado = buildScheduledTime(selectedDateStr, slot.start);
         }
       }
 
