@@ -55,9 +55,10 @@ interface PedidoIndividual {
 }
 
 export const PedidosDisponiveis = () => {
-  const { userProfile } = useAuth();
+  const { userProfile, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [aceitando, setAceitando] = useState<string | null>(null);
+  const canLoadDriverData = !authLoading && userProfile?.role === 'entregador' && !!userProfile?.id;
 
   // Fetch driver's current position
   const { data: driverStatus } = useQuery({
@@ -71,12 +72,12 @@ export const PedidosDisponiveis = () => {
         .maybeSingle();
       return data;
     },
-    enabled: !!userProfile?.id,
+    enabled: canLoadDriverData,
   });
 
   // Fetch available routes
   const { data: rotasRaw, isLoading: loadingRotas, refetch: refetchRotas } = useQuery({
-    queryKey: ['rotas-disponiveis'],
+    queryKey: ['rotas-disponiveis', userProfile?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('rotas_otimizadas')
@@ -88,18 +89,20 @@ export const PedidosDisponiveis = () => {
       if (error) throw error;
       return (data || []) as RotaDisponivel[];
     },
+    enabled: canLoadDriverData,
     refetchInterval: 15000,
   });
 
   // Fetch individual orders without a driver (em_preparacao)
   const { data: pedidosRaw, isLoading: loadingPedidos, refetch: refetchPedidos } = useQuery({
-    queryKey: ['pedidos-disponiveis'],
+    queryKey: ['pedidos-disponiveis', userProfile?.id],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('listar-pedidos-disponiveis');
 
       if (error) throw error;
       return ((data?.pedidos || []) as PedidoIndividual[]);
     },
+    enabled: canLoadDriverData,
     refetchInterval: 15000,
   });
 
@@ -110,6 +113,8 @@ export const PedidosDisponiveis = () => {
 
   // Subscribe to realtime changes for both tables
   useEffect(() => {
+    if (!canLoadDriverData) return;
+
     const channel = supabase
       .channel('pedidos-disponiveis-rt')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'rotas_otimizadas' }, () => {
@@ -121,7 +126,7 @@ export const PedidosDisponiveis = () => {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [refetchRotas, refetchPedidos]);
+  }, [canLoadDriverData, refetchRotas, refetchPedidos]);
 
   const driverLat = driverStatus?.coordenadas_lat ? Number(driverStatus.coordenadas_lat) : null;
   const driverLng = driverStatus?.coordenadas_lng ? Number(driverStatus.coordenadas_lng) : null;
@@ -352,7 +357,7 @@ export const PedidosDisponiveis = () => {
     );
   };
 
-  const loading = loadingRotas || loadingPedidos;
+  const loading = authLoading || loadingRotas || loadingPedidos;
 
   if (loading) {
     return (

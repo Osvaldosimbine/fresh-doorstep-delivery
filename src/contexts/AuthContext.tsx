@@ -37,25 +37,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUserProfile = async (userId: string) => {
     try {
-      // Buscar profile
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id, nome_completo, email')
-        .eq('user_id', userId)
-        .single();
+      const [{ data: profile, error: profileError }, { data: roles, error: rolesError }] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('id, nome_completo, email')
+          .eq('user_id', userId)
+          .maybeSingle(),
+        supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId),
+      ]);
+
+      if (profileError) throw profileError;
+      if (rolesError) throw rolesError;
 
       if (!profile) return null;
 
-      // Buscar role da tabela user_roles (seguro)
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .single();
+      const preferredRole =
+        roles?.find(({ role }) => role === 'admin')?.role ||
+        roles?.[0]?.role ||
+        'cliente';
 
       return {
         ...profile,
-        role: roleData?.role || 'cliente'
+        role: preferredRole,
       } as UserProfile;
     } catch (error) {
       console.error('Error fetching user profile:', error);
@@ -91,35 +97,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          setTimeout(() => {
-            fetchUserProfile(session.user.id).then(setUserProfile);
-          }, 0);
-        } else {
-          setUserProfile(null);
-        }
-        setLoading(false);
-      }
-    );
+    let isMounted = true;
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        fetchUserProfile(session.user.id).then(setUserProfile);
+    const syncAuthState = async (currentSession: Session | null) => {
+      if (!isMounted) return;
+
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
+
+      if (!currentSession?.user) {
+        setUserProfile(null);
+        setLoading(false);
+        return;
       }
+
+      setLoading(true);
+      const profile = await fetchUserProfile(currentSession.user.id);
+
+      if (!isMounted) return;
+
+      setUserProfile(profile);
       setLoading(false);
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+      void syncAuthState(currentSession);
     });
 
-    return () => subscription.unsubscribe();
+    void supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      void syncAuthState(currentSession);
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const value = {

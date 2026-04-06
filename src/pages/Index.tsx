@@ -10,7 +10,7 @@ import DownloadApp from "@/components/DownloadApp";
 import Footer from "@/components/Footer";
 
 const Index = () => {
-  const { userProfile, loading } = useAuth();
+  const { user, userProfile, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,6 +22,14 @@ const Index = () => {
       }
     }
   }, [userProfile, loading, navigate]);
+
+  if (loading && user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

@@ -37,11 +37,11 @@ const App = () => (
               <Route path="/products" element={<Products />} />
               <Route path="/como-funciona" element={<HowItWorksPage />} />
               <Route path="/register" element={<Register />} />
-              <Route path="/cart" element={<Cart />} />
+              <Route path="/cart" element={<ProtectedRoute allowedRoles={['cliente', 'admin']}><Cart /></ProtectedRoute>} />
               <Route path="/product/:id" element={<ProductDetail />} />
               <Route path="/order-confirmation" element={<OrderConfirmation />} />
-              <Route path="/pedidos" element={<ProtectedRoute><PedidosHistorico /></ProtectedRoute>} />
-              <Route path="/fazer-pedido" element={<ProtectedRoute><FazerPedido /></ProtectedRoute>} />
+              <Route path="/pedidos" element={<ProtectedRoute allowedRoles={['cliente', 'admin']}><PedidosHistorico /></ProtectedRoute>} />
+              <Route path="/fazer-pedido" element={<ProtectedRoute allowedRoles={['cliente', 'admin']}><FazerPedido /></ProtectedRoute>} />
               <Route path="/order-tracking" element={<ProtectedRoute><OrderTracking /></ProtectedRoute>} />
               <Route path="/order-tracking/:id" element={<ProtectedRoute><OrderTracking /></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><Admin /></ProtectedRoute>} />
