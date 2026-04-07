@@ -336,6 +336,18 @@ export const PedidosDisponiveis = () => {
               <Badge variant="outline" className="text-orange-600 border-orange-300">
                 Pedido individual
               </Badge>
+              {pedido.status_pedido === 'a_caminho' && (
+                <Badge variant="destructive" className="flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  Pendente de atribuição
+                </Badge>
+              )}
+              {pedido.horario_agendado && (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {pedido.horario_agendado}
+                </Badge>
+              )}
               {dist != null && (
                 <Badge variant={dentroAlcance ? 'default' : 'destructive'} className="flex items-center gap-1">
                   <Locate className="h-3 w-3" />
