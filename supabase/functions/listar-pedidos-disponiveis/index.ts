@@ -44,20 +44,7 @@ serve(async (req) => {
       });
     }
 
-    const { data: profile, error: profileError } = await userClient
-      .from('profiles')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (profileError || !profile) {
-      return new Response(JSON.stringify({ error: 'User profile not found' }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const { data: roleData, error: roleError } = await userClient
+    const { data: roleData, error: roleError } = await adminClient
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
@@ -71,30 +58,28 @@ serve(async (req) => {
       });
     }
 
+    // Get orders already in active routes
     const { data: rotas, error: rotasError } = await adminClient
       .from('rotas_otimizadas')
       .select('pedidos_ids')
       .in('status', ['pendente', 'aguardando_entregador', 'aceita', 'em_andamento']);
 
-    if (rotasError) {
-      throw rotasError;
-    }
+    if (rotasError) throw rotasError;
 
     const pedidosEmRotas = new Set<string>();
     (rotas || []).forEach((rota: { pedidos_ids?: string[] | null }) => {
       rota.pedidos_ids?.forEach((pedidoId) => pedidosEmRotas.add(pedidoId));
     });
 
+    // Fetch orders: pendente, em_preparacao, AND orphan a_caminho (no driver assigned)
     const { data: pedidos, error: pedidosError } = await adminClient
       .from('pedidos')
-      .select('id, endereco_entrega, valor_total, status_pedido, created_at, padaria_id, padarias(nome_padaria, endereco, coordenadas_lat, coordenadas_lng)')
+      .select('id, endereco_entrega, valor_total, status_pedido, created_at, horario_agendado, padaria_id, padarias(nome_padaria, endereco, coordenadas_lat, coordenadas_lng)')
       .is('entregador_id', null)
-      .in('status_pedido', ['em_preparacao', 'pendente'])
+      .in('status_pedido', ['pendente', 'em_preparacao', 'a_caminho'])
       .order('created_at', { ascending: false });
 
-    if (pedidosError) {
-      throw pedidosError;
-    }
+    if (pedidosError) throw pedidosError;
 
     const pedidosDisponiveis = (pedidos || []).filter((pedido) => !pedidosEmRotas.has(pedido.id));
 

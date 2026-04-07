@@ -18,6 +18,8 @@ import {
   TrendingUp,
   Locate,
   ShoppingBag,
+  XCircle,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface RotaDisponivel {
@@ -44,6 +46,7 @@ interface PedidoIndividual {
   valor_total: number;
   status_pedido: string;
   created_at: string;
+  horario_agendado: string | null;
   padaria_id: string;
   padarias?: {
     nome_padaria: string;
@@ -93,17 +96,19 @@ export const PedidosDisponiveis = () => {
     refetchInterval: 15000,
   });
 
-  // Fetch individual orders without a driver (em_preparacao)
-  const { data: pedidosRaw, isLoading: loadingPedidos, refetch: refetchPedidos } = useQuery({
+  // Fetch individual orders without a driver
+  const { data: pedidosRaw, isLoading: loadingPedidos, isError: pedidosError, error: pedidosErrorObj, refetch: refetchPedidos } = useQuery({
     queryKey: ['pedidos-disponiveis', userProfile?.id],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('listar-pedidos-disponiveis');
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       return ((data?.pedidos || []) as PedidoIndividual[]);
     },
     enabled: canLoadDriverData,
     refetchInterval: 15000,
+    retry: 2,
   });
 
   const refetch = () => {
@@ -221,18 +226,21 @@ export const PedidosDisponiveis = () => {
     if (!userProfile?.id) return;
     try {
       setAceitando(pedidoId);
-      const { error } = await supabase
-        .from('pedidos')
-        .update({ entregador_id: userProfile.id, status_pedido: 'a_caminho' as const })
-        .eq('id', pedidoId)
-        .is('entregador_id', null);
+      const { data, error } = await supabase.functions.invoke('aceitar-pedido', {
+        body: { pedido_id: pedidoId },
+      });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       toast({ title: 'Pedido aceite!', description: 'O pedido foi atribuído a você.' });
       refetch();
-    } catch {
-      toast({ title: 'Erro', description: 'Não foi possível aceitar o pedido.', variant: 'destructive' });
+    } catch (err: any) {
+      const msg = err?.message?.includes('already taken')
+        ? 'Este pedido já foi aceite por outro entregador.'
+        : 'Não foi possível aceitar o pedido.';
+      toast({ title: 'Erro', description: msg, variant: 'destructive' });
+      refetch();
     } finally {
       setAceitando(null);
     }
@@ -328,6 +336,18 @@ export const PedidosDisponiveis = () => {
               <Badge variant="outline" className="text-orange-600 border-orange-300">
                 Pedido individual
               </Badge>
+              {pedido.status_pedido === 'a_caminho' && (
+                <Badge variant="destructive" className="flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  Pendente de atribuição
+                </Badge>
+              )}
+              {pedido.horario_agendado && (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {pedido.horario_agendado}
+                </Badge>
+              )}
               {dist != null && (
                 <Badge variant={dentroAlcance ? 'default' : 'destructive'} className="flex items-center gap-1">
                   <Locate className="h-3 w-3" />
@@ -364,6 +384,26 @@ export const PedidosDisponiveis = () => {
       <Card className="p-8">
         <div className="flex items-center justify-center">
           <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </Card>
+    );
+  }
+
+  if (pedidosError) {
+    return (
+      <Card className="p-8">
+        <div className="flex flex-col items-center justify-center text-center space-y-4">
+          <XCircle size={48} className="text-destructive" />
+          <div>
+            <h3 className="text-xl font-semibold mb-2">Erro ao carregar pedidos</h3>
+            <p className="text-muted-foreground">
+              {pedidosErrorObj?.message || 'Não foi possível listar os pedidos disponíveis.'}
+            </p>
+          </div>
+          <Button onClick={refetch} variant="outline">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Tentar novamente
+          </Button>
         </div>
       </Card>
     );
