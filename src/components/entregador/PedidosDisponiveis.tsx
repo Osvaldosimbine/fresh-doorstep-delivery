@@ -375,6 +375,26 @@ export const PedidosDisponiveis = () => {
     );
   }
 
+  if (pedidosError) {
+    return (
+      <Card className="p-8">
+        <div className="flex flex-col items-center justify-center text-center space-y-4">
+          <XCircle size={48} className="text-destructive" />
+          <div>
+            <h3 className="text-xl font-semibold mb-2">Erro ao carregar pedidos</h3>
+            <p className="text-muted-foreground">
+              {pedidosErrorObj?.message || 'Não foi possível listar os pedidos disponíveis.'}
+            </p>
+          </div>
+          <Button onClick={refetch} variant="outline">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Tentar novamente
+          </Button>
+        </div>
+      </Card>
+    );
+  }
+
   if (totalAll === 0) {
     return (
       <Card className="p-8">
