@@ -445,12 +445,9 @@ export function OrdersManagement({ padariaId }: OrdersManagementProps) {
                   )}
 
                   {order.status_pedido === "em_preparacao" && (
-                    <Button
-                      size="sm"
-                      onClick={() => updateOrderStatus(order.id, "a_caminho")}
-                    >
-                      Marcar Em Rota
-                    </Button>
+                    <Badge variant="outline" className="text-xs">
+                      Aguardando entregador
+                    </Badge>
                   )}
                 </div>
               </div>

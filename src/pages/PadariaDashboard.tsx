@@ -8,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { DashboardMetrics } from "@/components/padaria/DashboardMetrics";
-import { ProductManagement } from "@/components/padaria/ProductManagement";
 import { OrdersList } from "@/components/padaria/OrdersList";
 import { OrdersManagement } from "@/components/padaria/OrdersManagement";
 import { FinancialReports } from "@/components/padaria/FinancialReports";
@@ -103,9 +102,8 @@ export default function PadariaDashboard() {
         </div>
 
         <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 lg:grid-cols-6">
+          <TabsList className="grid w-full grid-cols-5 lg:grid-cols-5">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="produtos">Produtos</TabsTrigger>
             <TabsTrigger value="pedidos">Pedidos</TabsTrigger>
             <TabsTrigger value="gestao-pedidos">Gestão</TabsTrigger>
             <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
@@ -114,10 +112,6 @@ export default function PadariaDashboard() {
 
           <TabsContent value="dashboard" className="space-y-6">
             <DashboardMetrics padariaId={padariaId} />
-          </TabsContent>
-
-          <TabsContent value="produtos">
-            <ProductManagement padariaId={padariaId} />
           </TabsContent>
 
           <TabsContent value="pedidos">
