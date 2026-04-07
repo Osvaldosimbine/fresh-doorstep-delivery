@@ -18,6 +18,8 @@ import {
   TrendingUp,
   Locate,
   ShoppingBag,
+  XCircle,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface RotaDisponivel {
