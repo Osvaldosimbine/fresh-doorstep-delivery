@@ -44,6 +44,7 @@ interface PedidoIndividual {
   valor_total: number;
   status_pedido: string;
   created_at: string;
+  horario_agendado: string | null;
   padaria_id: string;
   padarias?: {
     nome_padaria: string;
@@ -93,17 +94,19 @@ export const PedidosDisponiveis = () => {
     refetchInterval: 15000,
   });
 
-  // Fetch individual orders without a driver (em_preparacao)
-  const { data: pedidosRaw, isLoading: loadingPedidos, refetch: refetchPedidos } = useQuery({
+  // Fetch individual orders without a driver
+  const { data: pedidosRaw, isLoading: loadingPedidos, isError: pedidosError, error: pedidosErrorObj, refetch: refetchPedidos } = useQuery({
     queryKey: ['pedidos-disponiveis', userProfile?.id],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('listar-pedidos-disponiveis');
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       return ((data?.pedidos || []) as PedidoIndividual[]);
     },
     enabled: canLoadDriverData,
     refetchInterval: 15000,
+    retry: 2,
   });
 
   const refetch = () => {
@@ -221,18 +224,21 @@ export const PedidosDisponiveis = () => {
     if (!userProfile?.id) return;
     try {
       setAceitando(pedidoId);
-      const { error } = await supabase
-        .from('pedidos')
-        .update({ entregador_id: userProfile.id, status_pedido: 'a_caminho' as const })
-        .eq('id', pedidoId)
-        .is('entregador_id', null);
+      const { data, error } = await supabase.functions.invoke('aceitar-pedido', {
+        body: { pedido_id: pedidoId },
+      });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       toast({ title: 'Pedido aceite!', description: 'O pedido foi atribuído a você.' });
       refetch();
-    } catch {
-      toast({ title: 'Erro', description: 'Não foi possível aceitar o pedido.', variant: 'destructive' });
+    } catch (err: any) {
+      const msg = err?.message?.includes('already taken')
+        ? 'Este pedido já foi aceite por outro entregador.'
+        : 'Não foi possível aceitar o pedido.';
+      toast({ title: 'Erro', description: msg, variant: 'destructive' });
+      refetch();
     } finally {
       setAceitando(null);
     }
