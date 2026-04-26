@@ -69,13 +69,13 @@ export const RotasAtivas = () => {
     <>
       <div className="space-y-6">
         <div className="flex justify-end gap-2">
-          <EntregadorLocationShare entregadorId={userProfile?.id ?? ''} pedidoId={rotaAtual.pedido_id} />
+          <EntregadorLocationShare entregadorId={userProfile?.id ?? ''} pedidoId={rotaAtual.pedidos_ids?.[0]} />
           <ReportarProblema rotaId={rotaAtual.id} />
         </div>
         <MapaRota rota={rotaAtual} />
         <ListaParagens rota={rotaAtual} onUpdate={refetch} />
-        {rotaAtual.pedido_id && (
-          <ChatPedido pedidoId={rotaAtual.pedido_id} otherPartyLabel="Cliente" />
+        {rotaAtual.pedidos_ids?.[0] && (
+          <ChatPedido pedidoId={rotaAtual.pedidos_ids[0]} otherPartyLabel="Cliente" />
         )}
       </div>
       <NotificacaoRota rota={notificacaoRota} open={showNotificacao} onOpenChange={setShowNotificacao} onAceitar={refetch} />

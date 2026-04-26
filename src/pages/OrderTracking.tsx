@@ -277,15 +277,15 @@ const OrderTracking = () => {
           )}
 
           {/* ETA + Chat + WhatsApp */}
-          {order.status !== 'entregue' && order.status !== 'cancelado' && (
+          {order.status_pedido !== 'entregue' && order.status_pedido !== 'cancelado' && (
             <div className="mb-6 space-y-4">
-              <ETADisplay order={order} />
+              <ETADisplay order={{ ...order, status: order.status_pedido }} />
               <div className="flex justify-end">
                 <WhatsAppShare
                   orderId={order.id}
-                  status={order.status}
+                  status={order.status_pedido}
                   padariaNome={order.padaria?.nome_padaria}
-                  total={order.total}
+                  total={order.valor_total}
                 />
               </div>
               <ChatPedido pedidoId={order.id} otherPartyLabel="Entregador" />

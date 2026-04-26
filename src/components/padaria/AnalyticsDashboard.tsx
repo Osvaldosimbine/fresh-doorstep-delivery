@@ -93,14 +93,17 @@ export function AnalyticsDashboard({ padariaId }: Props) {
       }
 
       // Average rating
-      const { data: ratings } = await supabase
-        .from("avaliacoes")
-        .select("estrelas, pedidos!inner(padaria_id)")
-        .eq("pedidos.padaria_id", padariaId)
-        .gte("created_at", sinceISO)
-        .throwOnError()
-        .then((r) => r)
-        .catch(() => ({ data: null }));
+      let ratings: any[] | null = null;
+      try {
+        const { data: ratingsData } = await supabase
+          .from("avaliacoes")
+          .select("estrelas, pedidos!inner(padaria_id)")
+          .eq("pedidos.padaria_id", padariaId)
+          .gte("created_at", sinceISO);
+        ratings = ratingsData;
+      } catch {
+        ratings = null;
+      }
 
       if (ratings && ratings.length > 0) {
         const avg = ratings.reduce((s: number, r: any) => s + (r.estrelas ?? 0), 0) / ratings.length;
