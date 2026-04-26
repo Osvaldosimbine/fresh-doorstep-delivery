@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/fresh-doorstep-delivery/sw.js', { scope: '/fresh-doorstep-delivery/' })})}
