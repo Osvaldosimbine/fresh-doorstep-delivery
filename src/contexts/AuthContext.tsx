@@ -120,11 +120,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+    // 1. Restore initial session first — avoids double-fetch with INITIAL_SESSION event
+    void supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       void syncAuthState(currentSession);
     });
 
-    void supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+    // 2. Only react to auth changes after the initial load
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
+      if (event === 'INITIAL_SESSION') return;
       void syncAuthState(currentSession);
     });
 

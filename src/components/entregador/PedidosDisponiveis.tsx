@@ -200,13 +200,20 @@ export const PedidosDisponiveis = () => {
         .from('rotas_otimizadas')
         .update({ entregador_id: userProfile.id, status: 'aceita', aceita_em: new Date().toISOString() })
         .eq('id', rotaId)
-        .eq('status', 'pendente')
+        .in('status', ['pendente', 'aguardando_entregador'])
+        .is('entregador_id', null)
         .select('pedidos_ids')
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
-      if (rotaData?.pedidos_ids?.length) {
+      if (!rotaData) {
+        toast({ title: 'Rota indisponível', description: 'Esta rota já foi aceite por outro entregador.', variant: 'destructive' });
+        refetch();
+        return;
+      }
+
+      if (rotaData.pedidos_ids?.length) {
         await supabase
           .from('pedidos')
           .update({ entregador_id: userProfile.id, status_pedido: 'a_caminho' as const })

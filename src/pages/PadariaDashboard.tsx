@@ -98,7 +98,7 @@ export default function PadariaDashboard() {
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="mb-6">
           <h1 className="text-3xl font-bold">Painel da Padaria</h1>
-          <p className="text-muted-foreground">Gerencie seus produtos, pedidos e acompanhe suas vendas</p>
+          <p className="text-muted-foreground">Gerencie seus pedidos, clientes e acompanhe suas vendas</p>
         </div>
 
         <Tabs defaultValue="dashboard" className="space-y-6">

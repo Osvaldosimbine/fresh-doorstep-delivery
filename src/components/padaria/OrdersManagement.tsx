@@ -549,7 +549,6 @@ export function OrdersManagement({ padariaId }: OrdersManagementProps) {
                   <SelectContent>
                     <SelectItem value="pendente">Pendente</SelectItem>
                     <SelectItem value="em_preparacao">Em Preparação</SelectItem>
-                    <SelectItem value="a_caminho">A Caminho</SelectItem>
                     <SelectItem value="entregue">Entregue</SelectItem>
                     <SelectItem value="cancelado">Cancelado</SelectItem>
                   </SelectContent>
