@@ -12,6 +12,8 @@ import { OrdersList } from "@/components/padaria/OrdersList";
 import { OrdersManagement } from "@/components/padaria/OrdersManagement";
 import { FinancialReports } from "@/components/padaria/FinancialReports";
 import { CustomersManagement } from "@/components/padaria/CustomersManagement";
+import { ProductManagement } from "@/components/padaria/ProductManagement";
+import { useOrderNotifications } from "@/hooks/useOrderNotifications";
 
 export default function PadariaDashboard() {
   const [loading, setLoading] = useState(true);
@@ -88,6 +90,8 @@ export default function PadariaDashboard() {
     );
   }
 
+  useOrderNotifications("padaria", padariaId);
+
   if (!isPadaria || !padariaId) {
     return null;
   }
@@ -102,12 +106,13 @@ export default function PadariaDashboard() {
         </div>
 
         <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 lg:grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6 lg:grid-cols-6">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="pedidos">Pedidos</TabsTrigger>
             <TabsTrigger value="gestao-pedidos">Gestão</TabsTrigger>
             <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
             <TabsTrigger value="clientes">Clientes</TabsTrigger>
+            <TabsTrigger value="produtos">Produtos</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -128,6 +133,10 @@ export default function PadariaDashboard() {
 
           <TabsContent value="clientes">
             <CustomersManagement padariaId={padariaId} />
+          </TabsContent>
+
+          <TabsContent value="produtos">
+            <ProductManagement padariaId={padariaId} />
           </TabsContent>
         </Tabs>
       </main>

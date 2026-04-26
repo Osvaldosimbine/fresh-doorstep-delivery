@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, AlertTriangle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface Product {
   id: string;
@@ -278,12 +279,24 @@ export function ProductManagement({ padariaId }: ProductManagementProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {products.map((product) => (
-                <TableRow key={product.id}>
+              {products.map((product) => {
+                const lowStock = product.estoque_atual < 10;
+                return (
+                <TableRow key={product.id} className={lowStock ? "bg-red-50 dark:bg-red-950/20" : ""}>
                   <TableCell className="font-medium">{product.nome_produto}</TableCell>
                   <TableCell>{product.tipo_pao}</TableCell>
                   <TableCell>{product.preco.toFixed(2)} MZN</TableCell>
-                  <TableCell>{product.estoque_atual}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <span>{product.estoque_atual}</span>
+                      {lowStock && (
+                        <Badge variant="destructive" className="text-xs flex items-center gap-1">
+                          <AlertTriangle className="h-3 w-3" />
+                          Baixo
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <Switch
                       checked={product.disponivel}
@@ -300,7 +313,8 @@ export function ProductManagement({ padariaId }: ProductManagementProps) {
                     </Button>
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
               {products.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center text-muted-foreground">

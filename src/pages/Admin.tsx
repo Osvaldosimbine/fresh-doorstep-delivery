@@ -80,39 +80,55 @@ const Admin = () => {
     checkAdminStatus();
   }, [user]);
 
-  // Mock data for demonstration
+  // Load real orders from Supabase
   useEffect(() => {
     if (!isAdmin) return;
 
-    const mockOrders: OrderSummary[] = [
-      {
-        id: "1",
-        date: selectedDate,
-        time: "07:30",
-        produto: "Pão Tradicional",
-        quantity: 25,
-        unitPrice: 13.00,
-        totalPrice: 325.00,
-        savings: 50.00,
-        type: "singular",
-        padaria: "Padaria Central",
-        cliente: "João Silva"
-      },
-      {
-        id: "2",
-        date: selectedDate,
-        time: "08:15",
-        produto: "Pão Integral",
-        quantity: 100,
-        unitPrice: 12.00,
-        totalPrice: 1200.00,
-        savings: 300.00,
-        type: "revenda",
-        padaria: "Padaria Norte",
-        cliente: "Maria Santos"
+    const fetchOrders = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("pedidos")
+          .select(`
+            id,
+            created_at,
+            valor_total,
+            status_pedido,
+            profiles!pedidos_cliente_id_fkey(nome_completo),
+            padarias(nome_padaria),
+            itens_pedido(quantidade, preco_unitario, produtos(nome_produto))
+          `)
+          .gte("created_at", `${selectedDate}T00:00:00`)
+          .lte("created_at", `${selectedDate}T23:59:59`)
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        const mapped: OrderSummary[] = (data || []).map((row: any) => {
+          const firstItem = row.itens_pedido?.[0];
+          const totalQty = (row.itens_pedido || []).reduce((s: number, i: any) => s + (i.quantidade || 0), 0);
+          const createdAt = new Date(row.created_at);
+          return {
+            id: row.id,
+            date: selectedDate,
+            time: createdAt.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" }),
+            produto: firstItem?.produtos?.nome_produto || "—",
+            quantity: totalQty,
+            unitPrice: firstItem?.preco_unitario || 0,
+            totalPrice: row.valor_total || 0,
+            savings: 0,
+            type: totalQty >= 50 ? "revenda" : "singular",
+            padaria: row.padarias?.nome_padaria || "—",
+            cliente: row.profiles?.nome_completo || "—",
+          };
+        });
+
+        setOrders(mapped);
+      } catch (err) {
+        console.error("Erro ao carregar encomendas:", err);
       }
-    ];
-    setOrders(mockOrders);
+    };
+
+    fetchOrders();
   }, [selectedDate, isAdmin]);
 
   const handleUpdatePricing = () => {

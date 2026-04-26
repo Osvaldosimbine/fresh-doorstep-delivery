@@ -17,7 +17,8 @@ import MapboxAddressInput, { type AddressResult } from '@/components/MapboxAddre
 import { EmailVerificationNotice } from '@/components/EmailVerificationNotice';
 import { RoleBasedRedirect } from '@/components/RoleBasedRedirect';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2, CheckCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const registerSchema = z.object({
   nome_completo: z.string()
@@ -97,6 +98,10 @@ const Register = () => {
   const [shouldRedirect, setShouldRedirect] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
   const { signUp, signIn, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -222,6 +227,21 @@ const Register = () => {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail) return;
+    setForgotLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setForgotLoading(false);
+    if (error) {
+      toast({ title: "Erro", description: mapAuthError(error), variant: "destructive" });
+    } else {
+      setForgotSent(true);
+    }
+  };
+
   const onLogin = async (data: LoginFormData) => {
     if (cooldown > 0) return;
     setLoading(true);
@@ -329,8 +349,43 @@ const Register = () => {
                           'Entrar'
                         )}
                       </Button>
+
+                      <div className="text-center">
+                        <button
+                          type="button"
+                          onClick={() => { setForgotMode(!forgotMode); setForgotSent(false); setForgotEmail(''); }}
+                          className="text-sm text-muted-foreground hover:text-primary underline-offset-4 hover:underline"
+                        >
+                          Esqueci a senha
+                        </button>
+                      </div>
                     </form>
                   </Form>
+
+                  {forgotMode && (
+                    <div className="mt-4 border-t pt-4">
+                      {forgotSent ? (
+                        <div className="flex items-center gap-2 text-green-600 text-sm">
+                          <CheckCircle className="h-4 w-4" />
+                          Link de recuperação enviado! Verifique seu email.
+                        </div>
+                      ) : (
+                        <form onSubmit={handleForgotPassword} className="space-y-3">
+                          <p className="text-sm text-muted-foreground">Digite seu email para receber o link de recuperação:</p>
+                          <Input
+                            type="email"
+                            placeholder="seu@email.com"
+                            value={forgotEmail}
+                            onChange={(e) => setForgotEmail(e.target.value)}
+                            required
+                          />
+                          <Button type="submit" variant="outline" className="w-full" disabled={forgotLoading}>
+                            {forgotLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Enviando...</> : 'Enviar link de recuperação'}
+                          </Button>
+                        </form>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

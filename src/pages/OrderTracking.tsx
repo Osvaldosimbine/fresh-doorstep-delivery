@@ -25,9 +25,24 @@ import { OrderTrackingStatus } from "@/components/OrderTrackingStatus";
 import ReceiptGenerator from "@/components/ReceiptGenerator";
 import { DeliveryTrackingMap } from "@/components/map/DeliveryTrackingMap";
 import { supabase } from "@/integrations/supabase/client";
+import { RatingSystem } from "@/components/RatingSystem";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 const OrderTracking = () => {
   const [showReceipt, setShowReceipt] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const { toast } = useToast();
   const [rotaInfo, setRotaInfo] = useState<{
     distancia_total_km: number;
     tempo_estimado_minutos: number;
@@ -162,6 +177,24 @@ const OrderTracking = () => {
 
   const isDelivered = order.status_pedido === "entregue";
   const isCancelled = order.status_pedido === "cancelado";
+  const canCancel = order.status_pedido === "pendente" || order.status_pedido === "em_preparacao";
+
+  const handleCancelOrder = async () => {
+    setCancelling(true);
+    try {
+      const { error } = await supabase
+        .from("pedidos")
+        .update({ status_pedido: "cancelado" })
+        .eq("id", orderId);
+      if (error) throw error;
+      toast({ title: "Pedido cancelado", description: "O seu pedido foi cancelado com sucesso." });
+      refetch();
+    } catch {
+      toast({ title: "Erro", description: "Não foi possível cancelar o pedido.", variant: "destructive" });
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -415,6 +448,38 @@ const OrderTracking = () => {
             </Card>
           )}
 
+          {/* Cancel Order */}
+          {canCancel && (
+            <Card className="mb-6 border-destructive/30">
+              <CardContent className="pt-6">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" className="w-full" disabled={cancelling}>
+                      {cancelling ? "Cancelando..." : "Cancelar Pedido"}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Cancelar pedido?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Esta ação não pode ser desfeita. O pedido será marcado como cancelado.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Voltar</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleCancelOrder} className="bg-destructive hover:bg-destructive/90">
+                        Sim, cancelar
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  Cancelamento disponível enquanto o pedido está pendente ou em preparação.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Completed State */}
           {isDelivered && (
             <div className="text-center">
@@ -426,6 +491,9 @@ const OrderTracking = () => {
                 <p className="text-muted-foreground mb-4">
                   Seu pedido foi entregue com sucesso. Obrigado por escolher a Bread Easy!
                 </p>
+                <div className="mb-4">
+                  <RatingSystem orderId={order.id} />
+                </div>
                 <Button onClick={() => navigate("/")}>
                   Fazer Novo Pedido
                 </Button>

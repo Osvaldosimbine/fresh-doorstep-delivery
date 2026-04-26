@@ -9,9 +9,25 @@ import { PedidosDisponiveis } from '@/components/entregador/PedidosDisponiveis';
 import { CarteiraDigital } from '@/components/entregador/CarteiraDigital';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { useOrderNotifications } from '@/hooks/useOrderNotifications';
+import { useAuth } from '@/contexts/AuthContext';
+
+const STORAGE_KEY = 'entregador_active_tab';
+const VALID_TABS = ['inicio', 'disponiveis', 'rotas', 'carteira', 'ganhos', 'historico'];
 
 const EntregadorDashboard = () => {
-  const [activeTab, setActiveTab] = useState('inicio');
+  const { userProfile } = useAuth();
+  useOrderNotifications("entregador", userProfile?.id ?? null);
+
+  const [activeTab, setActiveTab] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved && VALID_TABS.includes(saved) ? saved : 'inicio';
+  });
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    localStorage.setItem(STORAGE_KEY, tab);
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -21,7 +37,7 @@ const EntregadorDashboard = () => {
         <div className="max-w-6xl mx-auto">
           <h1 className="text-3xl font-bold mb-8 text-foreground">Dashboard do Entregador</h1>
           
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 mb-8">
               <TabsTrigger value="inicio">Início</TabsTrigger>
               <TabsTrigger value="disponiveis">Disponíveis</TabsTrigger>

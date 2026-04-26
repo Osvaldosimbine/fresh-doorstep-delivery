@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useCart } from '@/contexts/CartContext';
@@ -6,11 +6,56 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Plus, Minus, ShoppingCart } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { Trash2, Plus, Minus, ShoppingCart, Tag, Smartphone, Banknote } from 'lucide-react';
+
+const COUPONS: Record<string, { type: 'percent' | 'fixed'; value: number; label: string }> = {
+  'BREAD10': { type: 'percent', value: 10, label: '10% de desconto' },
+  'PROMO5': { type: 'fixed', value: 5, label: '5 MT de desconto' },
+  'BEMVINDO': { type: 'percent', value: 15, label: '15% de desconto (boas-vindas)' },
+};
 
 const Cart = () => {
   const { items, updateQuantity, removeFromCart, getTotal, getTotalSavings } = useCart();
   const navigate = useNavigate();
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; type: 'percent' | 'fixed'; value: number; label: string } | null>(null);
+  const [couponError, setCouponError] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'mpesa' | 'emola' | 'dinheiro'>(() => {
+    return (localStorage.getItem('payment_method') as any) || 'dinheiro';
+  });
+  const [mpesaPhone, setMpesaPhone] = useState(localStorage.getItem('payment_phone') || '');
+
+  const handleApplyCoupon = () => {
+    const code = couponInput.trim().toUpperCase();
+    const coupon = COUPONS[code];
+    if (!coupon) {
+      setCouponError('Cupão inválido ou expirado.');
+      setAppliedCoupon(null);
+      return;
+    }
+    setAppliedCoupon({ code, ...coupon });
+    setCouponError('');
+    setCouponInput('');
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponInput('');
+    setCouponError('');
+  };
+
+  const handlePaymentMethodChange = (method: 'mpesa' | 'emola' | 'dinheiro') => {
+    setPaymentMethod(method);
+    localStorage.setItem('payment_method', method);
+  };
+
+  const handlePhoneChange = (phone: string) => {
+    setMpesaPhone(phone);
+    localStorage.setItem('payment_phone', phone);
+  };
 
   const handleQuantityChange = (itemId: string, newQuantity: number) => {
     if (newQuantity <= 0) {
@@ -41,6 +86,12 @@ const Cart = () => {
 
   const total = getTotal();
   const savings = getTotalSavings();
+  const couponDiscount = appliedCoupon
+    ? appliedCoupon.type === 'percent'
+      ? total * (appliedCoupon.value / 100)
+      : Math.min(appliedCoupon.value, total)
+    : 0;
+  const finalTotal = Math.max(0, total - couponDiscount);
 
   return (
     <div className="min-h-screen bg-background">
@@ -114,32 +165,111 @@ const Cart = () => {
             ))}
           </div>
           
-          <div>
+          <div className="space-y-4">
+            {/* Coupon */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Tag className="h-4 w-4" />
+                  Cupão de Desconto
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {appliedCoupon ? (
+                  <div className="flex items-center justify-between bg-green-50 dark:bg-green-950/20 rounded-md px-3 py-2">
+                    <span className="text-sm text-green-700 dark:text-green-400 font-medium">
+                      {appliedCoupon.code} — {appliedCoupon.label}
+                    </span>
+                    <button onClick={handleRemoveCoupon} className="text-xs text-destructive underline">Remover</button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Código do cupão"
+                      value={couponInput}
+                      onChange={(e) => { setCouponInput(e.target.value); setCouponError(''); }}
+                      onKeyDown={(e) => e.key === 'Enter' && handleApplyCoupon()}
+                      className="text-sm"
+                    />
+                    <Button variant="outline" size="sm" onClick={handleApplyCoupon}>
+                      Aplicar
+                    </Button>
+                  </div>
+                )}
+                {couponError && <p className="text-xs text-destructive">{couponError}</p>}
+              </CardContent>
+            </Card>
+
+            {/* Payment method */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Smartphone className="h-4 w-4" />
+                  Forma de Pagamento
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {(['mpesa', 'emola', 'dinheiro'] as const).map((method) => (
+                  <label key={method} className={`flex items-center gap-3 p-2 rounded-md border cursor-pointer transition-colors ${paymentMethod === method ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                    <input
+                      type="radio"
+                      name="payment"
+                      value={method}
+                      checked={paymentMethod === method}
+                      onChange={() => handlePaymentMethodChange(method)}
+                      className="accent-primary"
+                    />
+                    {method === 'mpesa' && <span className="text-sm font-medium">M-Pesa</span>}
+                    {method === 'emola' && <span className="text-sm font-medium">e-Mola</span>}
+                    {method === 'dinheiro' && <><Banknote className="h-4 w-4 text-muted-foreground" /><span className="text-sm font-medium">Dinheiro na Entrega</span></>}
+                  </label>
+                ))}
+                {(paymentMethod === 'mpesa' || paymentMethod === 'emola') && (
+                  <div className="pt-1 space-y-1">
+                    <Label className="text-xs text-muted-foreground">Número {paymentMethod === 'mpesa' ? 'M-Pesa' : 'e-Mola'}</Label>
+                    <Input
+                      placeholder="8X XXX XXXX"
+                      value={mpesaPhone}
+                      onChange={(e) => handlePhoneChange(e.target.value)}
+                      className="text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground">O pagamento será confirmado antes da preparação.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Order summary */}
             <Card>
               <CardHeader>
                 <CardTitle>Resumo do Pedido</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span>Total dos produtos:</span>
-                    <span>{total.toFixed(2)} MT</span>
-                  </div>
-                  {savings > 0 && (
-                    <div className="flex justify-between text-green-600">
-                      <span>Total economizado:</span>
-                      <span>-{savings.toFixed(2)} MT</span>
-                    </div>
-                  )}
-                  <div className="border-t pt-2">
-                    <div className="flex justify-between font-bold">
-                      <span>Total final:</span>
-                      <span>{total.toFixed(2)} MT</span>
-                    </div>
-                  </div>
+              <CardContent className="space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span>Subtotal:</span>
+                  <span>{total.toFixed(2)} MT</span>
                 </div>
-                
-                <Button 
+                {savings > 0 && (
+                  <div className="flex justify-between text-sm text-green-600">
+                    <span>Desconto volume:</span>
+                    <span>-{savings.toFixed(2)} MT</span>
+                  </div>
+                )}
+                {couponDiscount > 0 && (
+                  <div className="flex justify-between text-sm text-green-600">
+                    <span>Cupão ({appliedCoupon!.code}):</span>
+                    <span>-{couponDiscount.toFixed(2)} MT</span>
+                  </div>
+                )}
+                <Separator />
+                <div className="flex justify-between font-bold">
+                  <span>Total:</span>
+                  <span>{finalTotal.toFixed(2)} MT</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Pagamento: {paymentMethod === 'mpesa' ? 'M-Pesa' : paymentMethod === 'emola' ? 'e-Mola' : 'Dinheiro na Entrega'}
+                </p>
+                <Button
                   onClick={() => navigate('/fazer-pedido')}
                   className="w-full bg-bread-golden hover:bg-bread-crust"
                 >

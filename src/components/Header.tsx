@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Menu, ShoppingCart, User, LogOut } from "lucide-react";
+import { Menu, ShoppingCart, User, LogOut, HelpCircle, MessageCircle, Phone, Mail } from "lucide-react";
 import logoIcon from "@/assets/logo-icon.jpg";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
@@ -12,6 +12,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import MobileNavigation from "./MobileNavigation";
 
 const Header = () => {
@@ -105,6 +113,60 @@ const Header = () => {
               </Button>
             </Link>
           )}
+
+          {/* Support dialog */}
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="icon" title="Suporte">
+                <HelpCircle className="h-5 w-5" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-sm">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <MessageCircle className="h-5 w-5" />
+                  Suporte ao Cliente
+                </DialogTitle>
+                <DialogDescription>
+                  Precisa de ajuda? Entre em contacto connosco através de um dos canais abaixo.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3 pt-2">
+                <a
+                  href="https://wa.me/258840000000?text=Olá,%20preciso%20de%20ajuda%20com%20o%20Bread%20Easy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-3 rounded-md border hover:bg-accent transition-colors"
+                >
+                  <MessageCircle className="h-5 w-5 text-green-600" />
+                  <div>
+                    <p className="text-sm font-medium">WhatsApp</p>
+                    <p className="text-xs text-muted-foreground">+258 84 000 0000</p>
+                  </div>
+                </a>
+                <a
+                  href="tel:+258840000000"
+                  className="flex items-center gap-3 p-3 rounded-md border hover:bg-accent transition-colors"
+                >
+                  <Phone className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="text-sm font-medium">Telefone</p>
+                    <p className="text-xs text-muted-foreground">+258 84 000 0000</p>
+                  </div>
+                </a>
+                <a
+                  href="mailto:suporte@breadeasy.mz"
+                  className="flex items-center gap-3 p-3 rounded-md border hover:bg-accent transition-colors"
+                >
+                  <Mail className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="text-sm font-medium">Email</p>
+                    <p className="text-xs text-muted-foreground">suporte@breadeasy.mz</p>
+                  </div>
+                </a>
+              </div>
+            </DialogContent>
+          </Dialog>
 
           {user ? (
             <DropdownMenu>
