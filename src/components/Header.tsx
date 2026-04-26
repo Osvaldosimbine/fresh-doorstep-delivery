@@ -89,9 +89,11 @@ const Header = () => {
                   Pedidos
                 </Link>
               )}
-              <Link to="/register" className="text-sm font-medium hover:text-primary transition-colors">
-                Registro
-              </Link>
+              {!user && (
+                <Link to="/register" className="text-sm font-medium hover:text-primary transition-colors">
+                  Entrar / Cadastrar
+                </Link>
+              )}
             </>
           )}
         </nav>

@@ -9,7 +9,10 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Trash2, Plus, Minus, ShoppingCart, Tag, Smartphone, Banknote } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Trash2, Plus, Minus, ShoppingCart, Tag, Smartphone, Banknote, Star } from 'lucide-react';
+import { useLoyaltyPoints } from '@/components/LoyaltyPoints';
+import { useAuth } from '@/contexts/AuthContext';
 
 const COUPONS: Record<string, { type: 'percent' | 'fixed'; value: number; label: string }> = {
   'BREAD10': { type: 'percent', value: 10, label: '10% de desconto' },
@@ -20,6 +23,8 @@ const COUPONS: Record<string, { type: 'percent' | 'fixed'; value: number; label:
 const Cart = () => {
   const { items, updateQuantity, removeFromCart, getTotal, getTotalSavings } = useCart();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { pontos } = useLoyaltyPoints(user?.id ?? null);
   const [couponInput, setCouponInput] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; type: 'percent' | 'fixed'; value: number; label: string } | null>(null);
   const [couponError, setCouponError] = useState('');
@@ -27,6 +32,7 @@ const Cart = () => {
     return (localStorage.getItem('payment_method') as any) || 'dinheiro';
   });
   const [mpesaPhone, setMpesaPhone] = useState(localStorage.getItem('payment_phone') || '');
+  const [usePoints, setUsePoints] = useState(false);
 
   const handleApplyCoupon = () => {
     const code = couponInput.trim().toUpperCase();
@@ -91,7 +97,11 @@ const Cart = () => {
       ? total * (appliedCoupon.value / 100)
       : Math.min(appliedCoupon.value, total)
     : 0;
-  const finalTotal = Math.max(0, total - couponDiscount);
+  const maxRedeemable = Math.floor(pontos / 100) * 100;
+  const pointsDiscount = usePoints && maxRedeemable > 0 ? Math.floor(maxRedeemable / 100) * 10 : 0;
+  const pointsToUse = usePoints ? maxRedeemable : 0;
+  const finalTotal = Math.max(0, total - couponDiscount - pointsDiscount);
+  const pointsToEarn = Math.floor(finalTotal / 10);
 
   return (
     <div className="min-h-screen bg-background">
@@ -239,6 +249,29 @@ const Cart = () => {
               </CardContent>
             </Card>
 
+            {/* Loyalty points */}
+            {user && (
+              <Card className="border-orange-200 dark:border-orange-800">
+                <CardContent className="pt-4 pb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Star className="h-4 w-4 text-orange-500 fill-orange-500" />
+                      <div>
+                        <p className="text-sm font-medium">Pontos de fidelidade</p>
+                        <p className="text-xs text-muted-foreground">Tem {pontos} pts {maxRedeemable > 0 ? `(vale ${pointsDiscount > 0 ? pointsDiscount : Math.floor(maxRedeemable / 100) * 10} MZN)` : ''}</p>
+                      </div>
+                    </div>
+                    {maxRedeemable > 0 && (
+                      <Switch checked={usePoints} onCheckedChange={setUsePoints} />
+                    )}
+                  </div>
+                  {usePoints && pointsDiscount > 0 && (
+                    <p className="text-xs text-green-600 mt-2">✓ {pointsToUse} pts serão resgatados (-{pointsDiscount} MZN)</p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             {/* Order summary */}
             <Card>
               <CardHeader>
@@ -261,10 +294,20 @@ const Cart = () => {
                     <span>-{couponDiscount.toFixed(2)} MT</span>
                   </div>
                 )}
+                {pointsDiscount > 0 && (
+                  <div className="flex justify-between text-sm text-orange-600">
+                    <span>Pontos ({pointsToUse} pts):</span>
+                    <span>-{pointsDiscount.toFixed(2)} MT</span>
+                  </div>
+                )}
                 <Separator />
                 <div className="flex justify-between font-bold">
                   <span>Total:</span>
                   <span>{finalTotal.toFixed(2)} MT</span>
+                </div>
+                <div className="flex items-center gap-1 text-xs text-orange-600">
+                  <Star className="h-3 w-3 fill-orange-500" />
+                  <span>Vai ganhar +{pointsToEarn} pontos com este pedido</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Pagamento: {paymentMethod === 'mpesa' ? 'M-Pesa' : paymentMethod === 'emola' ? 'e-Mola' : 'Dinheiro na Entrega'}

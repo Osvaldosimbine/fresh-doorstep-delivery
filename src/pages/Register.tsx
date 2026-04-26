@@ -301,7 +301,7 @@ const Register = () => {
     }
   };
 
-  if (shouldRedirect && user) {
+  if (user) {
     return <RoleBasedRedirect />;
   }
 

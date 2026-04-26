@@ -26,6 +26,8 @@ import ReceiptGenerator from "@/components/ReceiptGenerator";
 import { DeliveryTrackingMap } from "@/components/map/DeliveryTrackingMap";
 import { supabase } from "@/integrations/supabase/client";
 import { RatingSystem } from "@/components/RatingSystem";
+import { ChatPedido } from "@/components/ChatPedido";
+import { ETADisplay } from "@/components/ETADisplay";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -271,6 +273,16 @@ const OrderTracking = () => {
                 />
               </CardContent>
             </Card>
+          )}
+
+          {/* Chat */}
+          {order.status !== 'entregue' && order.status !== 'cancelado' && (
+            <div className="mb-6">
+              <ETADisplay order={order} />
+              <div className="mt-4">
+                <ChatPedido pedidoId={order.id} otherPartyLabel="Entregador" />
+              </div>
+            </div>
           )}
 
           {/* Order Details Card */}

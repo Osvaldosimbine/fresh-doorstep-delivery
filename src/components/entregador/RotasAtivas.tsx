@@ -8,6 +8,8 @@ import { NotificacaoRota } from './NotificacaoRota';
 import { ReportarProblema } from './ReportarProblema';
 import { Card } from '@/components/ui/card';
 import { AlertCircle } from 'lucide-react';
+import { EntregadorLocationShare } from '@/components/EntregadorLocationShare';
+import { ChatPedido } from '@/components/ChatPedido';
 
 export const RotasAtivas = () => {
   const { userProfile } = useAuth();
@@ -66,11 +68,15 @@ export const RotasAtivas = () => {
   return (
     <>
       <div className="space-y-6">
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <EntregadorLocationShare entregadorId={userProfile?.id ?? ''} pedidoId={rotaAtual.pedido_id} />
           <ReportarProblema rotaId={rotaAtual.id} />
         </div>
         <MapaRota rota={rotaAtual} />
         <ListaParagens rota={rotaAtual} onUpdate={refetch} />
+        {rotaAtual.pedido_id && (
+          <ChatPedido pedidoId={rotaAtual.pedido_id} otherPartyLabel="Cliente" />
+        )}
       </div>
       <NotificacaoRota rota={notificacaoRota} open={showNotificacao} onOpenChange={setShowNotificacao} onAceitar={refetch} />
     </>

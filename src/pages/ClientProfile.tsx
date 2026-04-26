@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, User, Save, Lock } from "lucide-react";
+import { LoyaltyPoints } from "@/components/LoyaltyPoints";
 
 const ClientProfile = () => {
   const { user } = useAuth();
@@ -104,6 +105,8 @@ const ClientProfile = () => {
             <User className="h-6 w-6" />
             <h1 className="text-2xl font-bold">Meu Perfil</h1>
           </div>
+
+          {user && <LoyaltyPoints userId={user.id} />}
 
           <Card>
             <CardHeader>
