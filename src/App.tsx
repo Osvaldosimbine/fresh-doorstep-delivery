@@ -24,6 +24,7 @@ import EntregadorDashboard from "./pages/EntregadorDashboard";
 import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/ResetPassword";
 import ClientProfile from "./pages/ClientProfile";
+import PedidosRecorrentes from "./pages/PedidosRecorrentes";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +55,7 @@ const App = () => (
               <Route path="/entregador/dashboard" element={<ProtectedRoute allowedRoles={['entregador', 'admin']}><EntregadorDashboard /></ProtectedRoute>} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/perfil" element={<ProtectedRoute><ClientProfile /></ProtectedRoute>} />
+              <Route path="/pedidos-recorrentes" element={<ProtectedRoute allowedRoles={['cliente', 'admin']}><PedidosRecorrentes /></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

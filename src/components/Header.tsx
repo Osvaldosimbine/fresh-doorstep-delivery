@@ -85,9 +85,14 @@ const Header = () => {
                 Produtos
               </Link>
               {user && (
-                <Link to="/pedidos" className="text-sm font-medium hover:text-primary transition-colors">
-                  Pedidos
-                </Link>
+                <>
+                  <Link to="/pedidos" className="text-sm font-medium hover:text-primary transition-colors">
+                    Pedidos
+                  </Link>
+                  <Link to="/pedidos-recorrentes" className="text-sm font-medium hover:text-primary transition-colors">
+                    Recorrentes
+                  </Link>
+                </>
               )}
               {!user && (
                 <Link to="/register" className="text-sm font-medium hover:text-primary transition-colors">

@@ -122,12 +122,17 @@ export function useLoyaltyPoints(userId: string | null) {
     const earned = Math.floor(total / 10);
     if (earned <= 0) return;
     try {
-      // Upsert balance
+      // Fetch current balance, then increment
+      const { data: current } = await supabase
+        .from("pontos_fidelidade" as any)
+        .select("pontos")
+        .eq("user_id", userId)
+        .maybeSingle();
+      const currentPontos = (current as any)?.pontos ?? 0;
       await supabase.from("pontos_fidelidade" as any).upsert(
-        { user_id: userId, pontos: earned },
-        { onConflict: "user_id", ignoreDuplicates: false }
+        { user_id: userId, pontos: currentPontos + earned },
+        { onConflict: "user_id" }
       );
-      // Log
       await supabase.from("historico_pontos" as any).insert({
         user_id: userId,
         pedido_id: pedidoId,
@@ -141,9 +146,15 @@ export function useLoyaltyPoints(userId: string | null) {
   async function redeemPoints(userId: string, pontosUsados: number): Promise<number> {
     const desconto = Math.floor(pontosUsados / 100) * 10;
     try {
+      const { data: current } = await supabase
+        .from("pontos_fidelidade" as any)
+        .select("pontos")
+        .eq("user_id", userId)
+        .maybeSingle();
+      const currentPontos = (current as any)?.pontos ?? 0;
       await supabase.from("pontos_fidelidade" as any).upsert(
-        { user_id: userId, pontos: -pontosUsados },
-        { onConflict: "user_id", ignoreDuplicates: false }
+        { user_id: userId, pontos: Math.max(0, currentPontos - pontosUsados) },
+        { onConflict: "user_id" }
       );
       await supabase.from("historico_pontos" as any).insert({
         user_id: userId,
