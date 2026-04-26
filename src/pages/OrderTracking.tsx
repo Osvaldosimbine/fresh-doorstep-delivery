@@ -28,6 +28,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { RatingSystem } from "@/components/RatingSystem";
 import { ChatPedido } from "@/components/ChatPedido";
 import { ETADisplay } from "@/components/ETADisplay";
+import { WhatsAppShare } from "@/components/WhatsAppShare";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -275,13 +276,19 @@ const OrderTracking = () => {
             </Card>
           )}
 
-          {/* Chat */}
+          {/* ETA + Chat + WhatsApp */}
           {order.status !== 'entregue' && order.status !== 'cancelado' && (
-            <div className="mb-6">
+            <div className="mb-6 space-y-4">
               <ETADisplay order={order} />
-              <div className="mt-4">
-                <ChatPedido pedidoId={order.id} otherPartyLabel="Entregador" />
+              <div className="flex justify-end">
+                <WhatsAppShare
+                  orderId={order.id}
+                  status={order.status}
+                  padariaNome={order.padaria?.nome_padaria}
+                  total={order.total}
+                />
               </div>
+              <ChatPedido pedidoId={order.id} otherPartyLabel="Entregador" />
             </div>
           )}
 

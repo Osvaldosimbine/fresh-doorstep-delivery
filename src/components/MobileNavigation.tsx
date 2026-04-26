@@ -10,15 +10,17 @@ import {
   SheetTrigger,
   SheetClose
 } from "@/components/ui/sheet";
-import { 
-  Menu, 
-  Home, 
-  Info, 
-  Package, 
-  ShoppingBag, 
-  UserPlus, 
+import {
+  Menu,
+  Home,
+  Info,
+  Package,
+  ShoppingBag,
+  UserPlus,
   LogOut,
-  ShoppingCart
+  ShoppingCart,
+  RepeatIcon,
+  Store
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
@@ -52,16 +54,24 @@ const MobileNavigation = () => {
   };
 
   const isEntregador = userProfile?.role === 'entregador';
+  const isPadaria = userProfile?.role === 'padaria';
 
   const navItems = isEntregador
     ? [
         { to: "/entregador/dashboard", label: "Meu Dashboard", icon: Home },
       ]
+    : isPadaria
+    ? [
+        { to: "/padaria/dashboard", label: "Painel da Padaria", icon: Store },
+      ]
     : [
         { to: "/", label: "Página Principal", icon: Home },
         { to: "/como-funciona", label: "Como Funciona", icon: Info },
         { to: "/products", label: "Produtos", icon: Package },
-        ...(user ? [{ to: "/pedidos", label: "Pedidos", icon: ShoppingBag }] : []),
+        ...(user ? [
+          { to: "/pedidos", label: "Pedidos", icon: ShoppingBag },
+          { to: "/pedidos-recorrentes", label: "Pedidos Recorrentes", icon: RepeatIcon },
+        ] : []),
         { to: "/cart", label: "Carrinho", icon: ShoppingCart, badge: cartItemsCount },
       ];
 

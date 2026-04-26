@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { CheckCircle, MapPin, Clock, Download, CreditCard, Truck } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { WhatsAppShare } from "@/components/WhatsAppShare";
 import jsPDF from "jspdf";
 import breadIcon from "@/assets/bread-icon.jpg";
 
@@ -188,6 +189,13 @@ const OrderConfirmation = () => {
               <Truck className="h-4 w-4 mr-2" />
               Acompanhar Entrega
             </Button>
+            <WhatsAppShare
+              orderId={orderId}
+              status="confirmado"
+              padariaNome={data?.items?.[0]?.padaria}
+              total={data?.total}
+              variant="confirmation"
+            />
             <Button onClick={() => navigate("/")} variant="ghost" className="w-full">
               Fazer Novo Pedido
             </Button>
