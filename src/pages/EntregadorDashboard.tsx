@@ -11,6 +11,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 import { useAuth } from '@/contexts/AuthContext';
+import { KycVerification } from '@/components/entregador/KycVerification';
 
 const STORAGE_KEY = 'entregador_active_tab';
 const VALID_TABS = ['inicio', 'disponiveis', 'rotas', 'carteira', 'ganhos', 'historico'];
@@ -48,6 +49,7 @@ const EntregadorDashboard = () => {
             </TabsList>
             
             <TabsContent value="inicio" className="space-y-6">
+              <KycVerification />
               <PerfilEntregador />
               <EntregadorStatusToggle />
             </TabsContent>

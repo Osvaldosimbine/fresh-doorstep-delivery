@@ -31,6 +31,7 @@ interface Order {
   observacoes: string | null;
   horario_agendado: string | null;
   entregador_id: string | null;
+  forma_pagamento: string | null;
   cliente: {
     nome_completo: string;
     telefone: string;
@@ -218,6 +219,7 @@ export function OrdersManagement({ padariaId }: OrdersManagementProps) {
           horario_agendado,
           cliente_id,
           entregador_id,
+          forma_pagamento,
           itens_pedido (
             quantidade,
             preco_unitario,
@@ -358,6 +360,11 @@ export function OrdersManagement({ padariaId }: OrdersManagementProps) {
               <div className="flex justify-between items-start">
                 <div className="space-y-2 flex-1">
                   <div className="flex items-center gap-3 flex-wrap">
+                    {(order.forma_pagamento === 'mpesa' || order.forma_pagamento === 'emola') && order.status_pedido === 'pendente' && (
+                      <Badge className="bg-green-600 text-white text-xs animate-pulse">
+                        Aguarda confirm. {order.forma_pagamento === 'mpesa' ? 'M-Pesa' : 'e-Mola'}
+                      </Badge>
+                    )}
                     {isNew && (
                       <Badge className="bg-primary text-primary-foreground animate-bounce">
                         <Bell className="h-3 w-3 mr-1" />
@@ -435,7 +442,17 @@ export function OrdersManagement({ padariaId }: OrdersManagementProps) {
                     Ver Detalhes
                   </Button>
 
-                  {order.status_pedido === "pendente" && (
+                  {order.status_pedido === "pendente" && (order.forma_pagamento === 'mpesa' || order.forma_pagamento === 'emola') && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-green-600 text-green-700 hover:bg-green-50"
+                      onClick={() => updateOrderStatus(order.id, "em_preparacao")}
+                    >
+                      Confirmar {order.forma_pagamento === 'mpesa' ? 'M-Pesa' : 'e-Mola'}
+                    </Button>
+                  )}
+                  {order.status_pedido === "pendente" && order.forma_pagamento !== 'mpesa' && order.forma_pagamento !== 'emola' && (
                     <Button
                       size="sm"
                       onClick={() => updateOrderStatus(order.id, "em_preparacao")}

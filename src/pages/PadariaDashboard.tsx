@@ -13,6 +13,7 @@ import { OrdersManagement } from "@/components/padaria/OrdersManagement";
 import { FinancialReports } from "@/components/padaria/FinancialReports";
 import { CustomersManagement } from "@/components/padaria/CustomersManagement";
 import { ProductManagement } from "@/components/padaria/ProductManagement";
+import { RatingsOverview } from "@/components/padaria/RatingsOverview";
 import { useOrderNotifications } from "@/hooks/useOrderNotifications";
 
 export default function PadariaDashboard() {
@@ -106,13 +107,14 @@ export default function PadariaDashboard() {
         </div>
 
         <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 lg:grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7 lg:grid-cols-7">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="pedidos">Pedidos</TabsTrigger>
             <TabsTrigger value="gestao-pedidos">Gestão</TabsTrigger>
             <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
             <TabsTrigger value="clientes">Clientes</TabsTrigger>
             <TabsTrigger value="produtos">Produtos</TabsTrigger>
+            <TabsTrigger value="avaliacoes">Avaliações</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -137,6 +139,10 @@ export default function PadariaDashboard() {
 
           <TabsContent value="produtos">
             <ProductManagement padariaId={padariaId} />
+          </TabsContent>
+
+          <TabsContent value="avaliacoes">
+            <RatingsOverview padariaId={padariaId} />
           </TabsContent>
         </Tabs>
       </main>

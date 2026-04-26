@@ -6,12 +6,24 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, DollarSign, Package, Settings, TrendingUp } from "lucide-react";
+import { Calendar, DollarSign, Package, Settings, TrendingUp, Truck, CheckCircle, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+
+interface Driver {
+  id: string;
+  nome_completo: string;
+  email: string;
+  telefone: string | null;
+  tipo_veiculo: string | null;
+  matricula_veiculo: string | null;
+  numero_documento: string | null;
+  ativo: boolean;
+  total_entregas: number;
+}
 
 interface OrderSummary {
   id: string;
@@ -46,6 +58,8 @@ const Admin = () => {
     discount50_199: 3.00,
     discount200Plus: 3.50
   });
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [loadingDrivers, setLoadingDrivers] = useState(false);
   const { toast } = useToast();
 
   // Check if user is admin
@@ -131,6 +145,41 @@ const Admin = () => {
     fetchOrders();
   }, [selectedDate, isAdmin]);
 
+  const fetchDrivers = async () => {
+    setLoadingDrivers(true);
+    try {
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "entregador");
+
+      const userIds = (roleData || []).map((r: any) => r.user_id);
+      if (userIds.length === 0) { setDrivers([]); return; }
+
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, nome_completo, email, telefone, tipo_veiculo, matricula_veiculo, numero_documento")
+        .in("user_id", userIds);
+
+      const mappedDrivers: Driver[] = (profiles || []).map((p: any) => ({
+        id: p.id,
+        nome_completo: p.nome_completo || "—",
+        email: p.email || "—",
+        telefone: p.telefone,
+        tipo_veiculo: p.tipo_veiculo,
+        matricula_veiculo: p.matricula_veiculo,
+        numero_documento: p.numero_documento,
+        ativo: true,
+        total_entregas: 0,
+      }));
+      setDrivers(mappedDrivers);
+    } catch (err) {
+      console.error("Erro ao carregar entregadores:", err);
+    } finally {
+      setLoadingDrivers(false);
+    }
+  };
+
   const handleUpdatePricing = () => {
     toast({
       title: "Preços atualizados!",
@@ -197,9 +246,10 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="orders" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="orders">Encomendas</TabsTrigger>
             <TabsTrigger value="analytics">Relatórios</TabsTrigger>
+            <TabsTrigger value="drivers" onClick={fetchDrivers}>Entregadores</TabsTrigger>
             <TabsTrigger value="settings">Configurações</TabsTrigger>
           </TabsList>
 
@@ -313,6 +363,69 @@ const Admin = () => {
                   </p>
                 </CardContent>
               </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="drivers" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                  <Truck className="h-5 w-5" />
+                  Gestão de Entregadores
+                </h2>
+                <p className="text-muted-foreground text-sm">{drivers.length} entregadores registados</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={fetchDrivers} disabled={loadingDrivers}>
+                {loadingDrivers ? "A carregar..." : "Atualizar"}
+              </Button>
+            </div>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Telefone</TableHead>
+                    <TableHead>Veículo</TableHead>
+                    <TableHead>Matrícula</TableHead>
+                    <TableHead>KYC</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {drivers.map((driver) => (
+                    <TableRow key={driver.id}>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{driver.nome_completo}</p>
+                          <p className="text-xs text-muted-foreground">{driver.email}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>{driver.telefone || "—"}</TableCell>
+                      <TableCell>{driver.tipo_veiculo || "—"}</TableCell>
+                      <TableCell>{driver.matricula_veiculo || "—"}</TableCell>
+                      <TableCell>
+                        {driver.numero_documento ? (
+                          <Badge className="bg-green-600 text-white flex items-center gap-1 w-fit">
+                            <CheckCircle className="h-3 w-3" />
+                            Verificado
+                          </Badge>
+                        ) : (
+                          <Badge variant="destructive" className="flex items-center gap-1 w-fit">
+                            <XCircle className="h-3 w-3" />
+                            Pendente
+                          </Badge>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {drivers.length === 0 && !loadingDrivers && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                        Nenhum entregador registado
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </div>
           </TabsContent>
 

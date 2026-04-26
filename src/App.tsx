@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CartProvider } from "./contexts/CartContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { NotificationProvider } from "./contexts/NotificationContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import Products from "./pages/Products";
@@ -21,6 +22,8 @@ import ProductDetail from "./pages/ProductDetail";
 import OrderConfirmation from "./pages/OrderConfirmation";
 import EntregadorDashboard from "./pages/EntregadorDashboard";
 import NotFound from "./pages/NotFound";
+import ResetPassword from "./pages/ResetPassword";
+import ClientProfile from "./pages/ClientProfile";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +32,7 @@ const App = () => (
     <TooltipProvider>
       <AuthProvider>
         <CartProvider>
+          <NotificationProvider>
           <Toaster />
           <Sonner />
           <BrowserRouter>
@@ -48,10 +52,13 @@ const App = () => (
               <Route path="/padaria/dashboard" element={<ProtectedRoute allowedRoles={['padaria', 'admin']}><PadariaDashboard /></ProtectedRoute>} />
               <Route path="/padaria/completar-cadastro" element={<ProtectedRoute allowedRoles={['padaria']}><CompletarCadastroPadaria /></ProtectedRoute>} />
               <Route path="/entregador/dashboard" element={<ProtectedRoute allowedRoles={['entregador', 'admin']}><EntregadorDashboard /></ProtectedRoute>} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/perfil" element={<ProtectedRoute><ClientProfile /></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
+          </NotificationProvider>
         </CartProvider>
       </AuthProvider>
     </TooltipProvider>

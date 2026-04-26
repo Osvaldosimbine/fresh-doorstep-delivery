@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -11,15 +11,57 @@ import { useCart } from "@/contexts/CartContext";
 import { usePadarias } from "@/hooks/usePadarias";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, Search, X } from "lucide-react";
 
 const FazerPedido = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [showCheckout, setShowCheckout] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [tipoPaoFilter, setTipoPaoFilter] = useState("todos");
   const selectedLocation = searchParams.get("location") || "";
   const { state, addItem, getItemQuantity, updateQuantity } = useCart();
   const { toast } = useToast();
   const { padarias, loading } = usePadarias(selectedLocation);
+
+  const filteredPadarias = useMemo(() => {
+    if (!padarias) return [];
+    let result = padarias;
+
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter((p: any) =>
+        p.nome_padaria?.toLowerCase().includes(term) ||
+        p.endereco?.toLowerCase().includes(term) ||
+        p.produtos?.some((prod: any) =>
+          prod.nome_produto?.toLowerCase().includes(term) ||
+          prod.tipo_pao?.toLowerCase().includes(term)
+        )
+      );
+    }
+
+    if (tipoPaoFilter !== "todos") {
+      result = result.filter((p: any) =>
+        p.produtos?.some((prod: any) =>
+          prod.tipo_pao?.toLowerCase() === tipoPaoFilter.toLowerCase()
+        )
+      );
+    }
+
+    return result;
+  }, [padarias, searchTerm, tipoPaoFilter]);
+
+  const allTipos = useMemo(() => {
+    if (!padarias) return [];
+    const tipos = new Set<string>();
+    padarias.forEach((p: any) => {
+      p.produtos?.forEach((prod: any) => {
+        if (prod.tipo_pao) tipos.add(prod.tipo_pao);
+      });
+    });
+    return Array.from(tipos).sort();
+  }, [padarias]);
 
   const handleLocationChange = (location: string) => {
     if (location) {
@@ -93,11 +135,45 @@ const FazerPedido = () => {
               onLocationChange={handleLocationChange}
             />
 
+            {/* Search and filter */}
+            <div className="flex gap-2 mt-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Pesquisar padaria ou produto..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+              {allTipos.length > 0 && (
+                <Select value={tipoPaoFilter} onValueChange={setTipoPaoFilter}>
+                  <SelectTrigger className="w-44">
+                    <SelectValue placeholder="Tipo de pão" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos os tipos</SelectItem>
+                    {allTipos.map((tipo) => (
+                      <SelectItem key={tipo} value={tipo}>{tipo}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
             {loading ? (
               <LoadingSkeleton />
-            ) : padarias && padarias.length > 0 ? (
-              <div className="grid gap-6">
-                {padarias.map((padaria) => (
+            ) : filteredPadarias.length > 0 ? (
+              <div className="grid gap-6 mt-4">
+                {filteredPadarias.map((padaria: any) => (
                   <BakeryCard
                     key={padaria.id}
                     padaria={padaria}
@@ -109,11 +185,20 @@ const FazerPedido = () => {
             ) : (
               <div className="text-center py-12">
                 <p className="text-lg text-muted-foreground">
-                  {selectedLocation 
+                  {searchTerm || tipoPaoFilter !== "todos"
+                    ? "Nenhum resultado para a pesquisa"
+                    : selectedLocation
                     ? `Nenhuma padaria encontrada em ${selectedLocation}`
-                    : "Selecione uma localização para ver as padarias disponíveis"
-                  }
+                    : "Selecione uma localização para ver as padarias disponíveis"}
                 </p>
+                {(searchTerm || tipoPaoFilter !== "todos") && (
+                  <button
+                    onClick={() => { setSearchTerm(""); setTipoPaoFilter("todos"); }}
+                    className="text-sm text-primary underline mt-2"
+                  >
+                    Limpar filtros
+                  </button>
+                )}
               </div>
             )}
           </div>

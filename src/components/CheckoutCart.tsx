@@ -15,6 +15,7 @@ import { getServiceFeeTier } from "@/lib/serviceFee";
 import { isOrderTimeAllowed, getNextAvailableTime, getTimeSlotsForDate, buildScheduledTime, ORDER_TIME_SLOTS } from "@/lib/timeUtils";
 import PaymentConfirmationDialog from "./PaymentConfirmationDialog";
 import MapboxAddressInput, { type AddressResult } from "@/components/MapboxAddressInput";
+import { useSavedAddresses } from "@/hooks/useSavedAddresses";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format, addDays } from "date-fns";
@@ -33,6 +34,9 @@ const CheckoutCart = () => {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState("");
+  const [saveAddress, setSaveAddress] = useState(false);
+  const [addressLabel, setAddressLabel] = useState("");
+  const { addresses: savedAddresses, addAddress, removeAddress } = useSavedAddresses();
 
   const today = new Date();
   const maxDate = addDays(today, 30);
@@ -60,6 +64,22 @@ const CheckoutCart = () => {
   const handleAddressSelected = (result: AddressResult) => {
     setSelectedLocation(result.address);
     setSelectedCoordinates(result.coordinates);
+    if (saveAddress && result.address) {
+      addAddress({
+        label: addressLabel.trim() || result.address.split(",")[0],
+        address: result.address,
+        coordinates: result.coordinates,
+      });
+      setSaveAddress(false);
+      setAddressLabel("");
+    }
+  };
+
+  const handleSelectSavedAddress = (addr: { address: string; coordinates?: { lat: number; lng: number } }) => {
+    setSelectedLocation(addr.address);
+    if (addr.coordinates) {
+      setSelectedCoordinates(addr.coordinates);
+    }
   };
 
   const validateFields = (): boolean => {
@@ -279,6 +299,28 @@ const CheckoutCart = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {savedAddresses.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Endereços guardados</Label>
+              <div className="flex flex-wrap gap-2">
+                {savedAddresses.map((addr) => (
+                  <button
+                    key={addr.id}
+                    type="button"
+                    onClick={() => handleSelectSavedAddress(addr)}
+                    className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                      selectedLocation === addr.address
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    {addr.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label>Endereço de entrega</Label>
             <MapboxAddressInput
@@ -287,7 +329,30 @@ const CheckoutCart = () => {
               placeholder="Digite o endereço ou use GPS"
             />
           </div>
-          
+
+          {selectedLocation && (
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="save-address"
+                checked={saveAddress}
+                onChange={(e) => setSaveAddress(e.target.checked)}
+                className="accent-primary"
+              />
+              <label htmlFor="save-address" className="text-xs text-muted-foreground cursor-pointer">
+                Guardar este endereço
+              </label>
+              {saveAddress && (
+                <Input
+                  value={addressLabel}
+                  onChange={(e) => setAddressLabel(e.target.value)}
+                  placeholder="Nome (ex: Casa, Trabalho)"
+                  className="text-xs h-7 w-36"
+                />
+              )}
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="complement">Complemento (rua, número, apartamento)</Label>
             <Input

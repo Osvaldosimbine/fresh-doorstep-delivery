@@ -21,6 +21,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import MobileNavigation from "./MobileNavigation";
+import { NotificationBell } from "./NotificationBell";
 
 const Header = () => {
   const { user, userProfile, signOut } = useAuth();
@@ -168,6 +169,8 @@ const Header = () => {
             </DialogContent>
           </Dialog>
 
+          {user && <NotificationBell />}
+
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -176,6 +179,12 @@ const Header = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-background">
+                {userProfile?.role === 'cliente' && (
+                  <DropdownMenuItem onClick={() => navigate('/perfil')}>
+                    <User className="mr-2 h-4 w-4" />
+                    Meu Perfil
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={handleSignOut}>
                   <LogOut className="mr-2 h-4 w-4" />
                   Sair
