@@ -35,7 +35,7 @@ const App = () => (
           <NotificationProvider>
           <Toaster />
           <Sonner />
-          <BrowserRouter basename={import.meta.env.BASE_URL}>
+          <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/products" element={<Products />} />
